@@ -767,6 +767,7 @@ static const m_option_t mp_opts[] = {
     {"audio-wait-open", OPT_FLOAT(audio_wait_open), M_RANGE(0, 60)},
     {"force-window", OPT_CHOICE(force_vo,
         {"no", 0}, {"yes", 1}, {"immediate", 2})},
+    {"fixed-vo", OPT_BOOL(fixed_vo)},
 
     {"volume-max", OPT_FLOAT(softvol_max), M_RANGE(100, 1000)},
     // values <0 for volume and mute are legacy and ignored
@@ -1006,6 +1007,7 @@ static const m_option_t mp_opts[] = {
 static const struct MPOpts mp_default_opts = {
     .use_terminal = true,
     .msg_color = true,
+    .fixed_vo = true,
     .softvol_max = 130,
     .softvol_volume = 100,
     .softvol_gain_max = 12,

@@ -200,6 +200,7 @@ typedef struct MPOpts {
     bool ao_null_fallback;
     bool audio_stream_silence;
     float audio_wait_open;
+    bool fixed_vo;
     int force_vo;
     float softvol_volume;
     int rgain_mode;

@@ -783,7 +783,7 @@ void mp_switch_track_n(struct MPContext *mpctx, int order, enum stream_type type
     if (order == 0) {
         if (type == STREAM_VIDEO) {
             uninit_video_chain(mpctx);
-            if (!track)
+            if (!mpctx->opts->fixed_vo || !track)
                 handle_force_window(mpctx, true);
         } else if (type == STREAM_AUDIO) {
             clear_audio_output_buffers(mpctx);
@@ -2072,6 +2072,8 @@ terminate_playback:
     uninit_audio_chain(mpctx);
     uninit_video_chain(mpctx);
     uninit_sub_all(mpctx);
+    if (!opts->fixed_vo)
+        uninit_video_out(mpctx);
     if (!opts->gapless_audio && !mpctx->encode_lavc_ctx)
         uninit_audio_out(mpctx);
 

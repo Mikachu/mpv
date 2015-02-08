@@ -228,7 +228,7 @@ void reinit_video_chain_src(struct MPContext *mpctx, struct track *track)
 {
     mp_assert(!mpctx->vo_chain);
 
-    if (!mpctx->video_out) {
+    if (!mpctx->opts->fixed_vo || !mpctx->video_out) {
         struct vo_extra ex = {
             .input_ctx = mpctx->input,
             .osd = mpctx->osd,
