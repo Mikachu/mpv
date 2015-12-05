@@ -120,6 +120,9 @@ static void mp_msg_av_log_callback(void *ptr, int level, const char *fmt,
     AVClass *avc = ptr ? *(AVClass **)ptr : NULL;
     int mp_level = av_log_level_to_mp_level(level);
 
+    if (strstr(fmt, "No trailing CRLF found in HTTP header"))
+        return;
+
     // Note: mp_log is thread-safe, but destruction of the log instances is not.
     mp_mutex_lock(&log_lock);
 
