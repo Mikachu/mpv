@@ -134,7 +134,7 @@ static mf_t *open_mf_pattern(void *talloc_ctx, struct demuxer *d, char *filename
         mp_info(log, "search expr: %s\n", fname);
 
         glob_t gg;
-        if (glob(fname, 0, NULL, &gg)) {
+        if (glob(fname, GLOB_NOSORT, NULL, &gg)) {
             talloc_free(mf);
             return NULL;
         }
