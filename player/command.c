@@ -2814,6 +2814,23 @@ static void update_window_scale(struct MPContext *mpctx)
                                      M_PROPERTY_SET, (void*)&scale);
 }
 
+static int mp_property_screen(void *ctx, struct m_property *prop,
+                              int action, void *arg)
+{
+    MPContext *mpctx = ctx;
+    if (action == M_PROPERTY_GET) {
+        struct vo *vo = mpctx->video_out;
+        if (!vo)
+            return M_PROPERTY_UNAVAILABLE;
+        int screen = -1;
+        if (vo_control(vo, VOCTRL_GET_SCREEN, &screen) != VO_TRUE)
+            return M_PROPERTY_UNAVAILABLE;
+        *(int *)arg = screen;
+        return M_PROPERTY_OK;
+    }
+    return mp_property_generic_option(mpctx, prop, action, arg);
+}
+
 static int mp_property_display_fps(void *ctx, struct m_property *prop,
                                    int action, void *arg)
 {
@@ -4787,6 +4804,7 @@ static const struct m_property mp_properties_base[] = {
     {"focused", mp_property_focused},
     {"display-names", mp_property_display_names},
     {"display-fps", mp_property_display_fps},
+    {"screen", mp_property_screen},
     {"estimated-display-fps", mp_property_estimated_display_fps},
     {"vsync-jitter", mp_property_vsync_jitter},
     {"display-hidpi-scale", mp_property_hidpi_scale},
@@ -4880,7 +4898,7 @@ static const char *const *const mp_event_property_change[] = {
     E(MP_EVENT_WIN_RESIZE, "current-window-scale", "osd-width", "osd-height",
       "osd-par", "osd-dimensions"),
     E(MP_EVENT_WIN_STATE, "display-names", "display-fps", "display-width",
-      "display-height"),
+      "display-height", "screen"),
     E(MP_EVENT_WIN_STATE2, "display-hidpi-scale"),
     E(MP_EVENT_FOCUS, "focused"),
     E(MP_EVENT_AMBIENT_LIGHTING_CHANGED, "ambient-light"),
