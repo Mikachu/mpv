@@ -1968,6 +1968,8 @@ static void vo_x11_update_geometry(struct vo *vo)
     if (disp && x11->current_screen != disp->screen) {
         x11->current_screen = disp->screen;
         x11->pending_vo_events |= VO_EVENT_ICC_PROFILE_CHANGED;
+        x11->opts->screen_id = disp->screen;
+        m_config_cache_write_opt(x11->opts_cache, &x11->opts->screen_id);
     }
     x11->pending_vo_events |= VO_EVENT_WIN_STATE;
 }
@@ -2125,6 +2127,11 @@ int vo_x11_control(struct vo *vo, int *events, int request, void *arg)
     case VOCTRL_VO_OPTS_CHANGED: {
         void *opt;
         while (m_config_cache_get_next_changed(x11->opts_cache, &opt)) {
+            if (opt == &opts->screen_id || opt == &opts->screen_name) {
+                if (!x11->window_hidden)
+                    continue;
+                vo_x11_set_geometry(vo);
+            }
             if (opt == &opts->fullscreen)
                 vo_x11_fullscreen(vo);
             if (opt == &opts->ontop)
@@ -2274,6 +2281,11 @@ int vo_x11_control(struct vo *vo, int *events, int request, void *arg)
         return VO_TRUE;
     case VOCTRL_BEGIN_DRAGGING:
         vo_x11_begin_dragging(vo);
+        return VO_TRUE;
+    case VOCTRL_GET_SCREEN:
+        if (!x11->window)
+            return VO_NOTAVAIL;
+        *(int *)arg = x11->current_screen;
         return VO_TRUE;
     }
     return VO_NOTIMPL;

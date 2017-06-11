@@ -1224,6 +1224,7 @@ static const struct MPOpts mp_default_opts = {
         "video-scale-y",
         "video-align-x",
         "video-align-y",
+        "screen",
         NULL
     },
 };
