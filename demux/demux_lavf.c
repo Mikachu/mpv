@@ -661,6 +661,17 @@ static void export_replaygain(demuxer_t *demuxer, struct sh_stream *sh,
         rgain->album_gain = av_rgain->album_gain / 100000.0f;
         rgain->album_peak = av_rgain->album_peak / 100000.0f;
     }
+    // fall back to album/track if track/album not given
+    // if both are not given then this is a nop but simpler code
+    // than checking for that case and doing nothing
+    if (av_rgain->track_gain == INT32_MIN)
+        rgain->track_gain = rgain->album_gain;
+    if (av_rgain->album_gain == INT32_MIN)
+        rgain->album_gain = rgain->track_gain;
+    if (av_rgain->track_peak == 0.0)
+        rgain->track_peak = rgain->album_peak;
+    if (av_rgain->album_peak == 0.0)
+        rgain->album_peak = rgain->track_peak;
 
     // This must be run only before the stream was added, otherwise there
     // will be race conditions with accesses from the user thread.
