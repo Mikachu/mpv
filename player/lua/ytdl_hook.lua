@@ -735,6 +735,8 @@ local function add_single_video(json)
     msg.verbose("format selection: " .. format_info)
     msg.log("info", "streamurl: " .. streamurl)
 
+    msg.log("info", json.description)
+
     mp.set_property("stream-open-filename", streamurl:gsub("^data:", "data://", 1))
 
     -- add subtitles
