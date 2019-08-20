@@ -226,7 +226,7 @@ static bool mp_archive_check_fatal(struct mp_archive *mpa, int r)
 {
     if (r > ARCHIVE_FATAL)
         return false;
-    MP_FATAL(mpa, "fatal error received - closing archive\n");
+    MP_FATAL(mpa, "fatal error received - cllsing archive\n");
     mp_archive_close(mpa);
     return true;
 }
@@ -452,7 +452,6 @@ bool mp_archive_next_entry(struct mp_archive *mpa)
 
 struct priv {
     struct mp_archive *mpa;
-    bool broken_seek;
     struct stream *src;
     int64_t entry_size;
     char *entry_name;
@@ -514,16 +513,17 @@ static int archive_entry_fill_buffer(stream_t *s, void *buffer, int max_len)
 static int archive_entry_seek(stream_t *s, int64_t newpos)
 {
     struct priv *p = s->priv;
-    if (p->mpa && !p->broken_seek) {
-        locale_t oldlocale = uselocale(p->mpa->locale);
-        int r = archive_seek_data(p->mpa->arch, newpos, SEEK_SET);
-        uselocale(oldlocale);
-        if (r >= 0)
-            return 1;
-        MP_WARN(s, "possibly unsupported seeking - switching to reopening\n");
-        p->broken_seek = true;
-        if (reopen_archive(s) < STREAM_OK)
-            return -1;
+    if (!p->mpa)
+        return -1;
+    locale_t oldlocale = uselocale(p->mpa->locale);
+    int r = archive_seek_data(p->mpa->arch, newpos, SEEK_SET);
+    uselocale(oldlocale);
+    if (r >= 0)
+        return 1;
+    if (mp_archive_check_fatal(p->mpa, r)) {
+        mp_archive_free(p->mpa);
+        p->mpa = NULL;
+        return -1;
     }
     // libarchive can't seek in most formats.
     if (newpos < s->pos) {
@@ -544,8 +544,8 @@ static int archive_entry_seek(stream_t *s, int64_t newpos)
                 return -1;
 
             int size = MPMIN(newpos - s->pos, sizeof(buffer));
-            locale_t oldlocale = uselocale(p->mpa->locale);
-            int r = archive_read_data(p->mpa->arch, buffer, size);
+            oldlocale = uselocale(p->mpa->locale);
+            r = archive_read_data(p->mpa->arch, buffer, size);
             if (r < 0) {
                 MP_ERR(s, "%s\n", archive_error_string(p->mpa->arch));
                 uselocale(oldlocale);
