@@ -210,30 +210,12 @@ static int close_cb(struct archive *arch, void *priv)
     return ARCHIVE_OK;
 }
 
-static void mp_archive_close(struct mp_archive *mpa)
+void mp_archive_free(struct mp_archive *mpa)
 {
     if (mpa && mpa->arch) {
         archive_read_close(mpa->arch);
         archive_read_free(mpa->arch);
-        mpa->arch = NULL;
     }
-}
-
-// Supposedly we're not allowed to continue reading on FATAL returns. Otherwise
-// crashes and other UB is possible. Assume calling the close/free functions is
-// still ok. Return true if it was fatal and the archive was closed.
-static bool mp_archive_check_fatal(struct mp_archive *mpa, int r)
-{
-    if (r > ARCHIVE_FATAL)
-        return false;
-    MP_FATAL(mpa, "fatal error received - cllsing archive\n");
-    mp_archive_close(mpa);
-    return true;
-}
-
-void mp_archive_free(struct mp_archive *mpa)
-{
-    mp_archive_close(mpa);
     if (mpa && mpa->locale)
         freelocale(mpa->locale);
     talloc_free(mpa);
@@ -409,9 +391,6 @@ bool mp_archive_next_entry(struct mp_archive *mpa)
     talloc_free(mpa->entry_filename);
     mpa->entry_filename = NULL;
 
-    if (!mpa->arch)
-        return false;
-
     locale_t oldlocale = uselocale(mpa->locale);
     bool success = false;
 
@@ -424,7 +403,6 @@ bool mp_archive_next_entry(struct mp_archive *mpa)
             MP_ERR(mpa, "%s\n", archive_error_string(mpa->arch));
         if (r < ARCHIVE_WARN) {
             MP_FATAL(mpa, "could not read archive entry\n");
-            mp_archive_check_fatal(mpa, r);
             break;
         }
         if (archive_entry_filetype(entry) != AE_IFREG)
@@ -499,13 +477,8 @@ static int archive_entry_fill_buffer(stream_t *s, void *buffer, int max_len)
         return 0;
     locale_t oldlocale = uselocale(p->mpa->locale);
     int r = archive_read_data(p->mpa->arch, buffer, max_len);
-    if (r < 0) {
+    if (r < 0)
         MP_ERR(s, "%s\n", archive_error_string(p->mpa->arch));
-        if (mp_archive_check_fatal(p->mpa, r)) {
-            mp_archive_free(p->mpa);
-            p->mpa = NULL;
-        }
-    }
     uselocale(oldlocale);
     return r;
 }
@@ -516,15 +489,11 @@ static int archive_entry_seek(stream_t *s, int64_t newpos)
     if (!p->mpa)
         return -1;
     locale_t oldlocale = uselocale(p->mpa->locale);
-    int r = archive_seek_data(p->mpa->arch, newpos, SEEK_SET);
-    uselocale(oldlocale);
-    if (r >= 0)
+    if (archive_seek_data(p->mpa->arch, newpos, SEEK_SET) >= 0) {
+        uselocale(oldlocale);
         return 1;
-    if (mp_archive_check_fatal(p->mpa, r)) {
-        mp_archive_free(p->mpa);
-        p->mpa = NULL;
-        return -1;
     }
+    uselocale(oldlocale);
     // libarchive can't seek in most formats.
     if (newpos < s->pos) {
         // Hack seeking backwards into working by reopening the archive and
@@ -545,14 +514,10 @@ static int archive_entry_seek(stream_t *s, int64_t newpos)
 
             int size = MPMIN(newpos - s->pos, sizeof(buffer));
             oldlocale = uselocale(p->mpa->locale);
-            r = archive_read_data(p->mpa->arch, buffer, size);
+            int r = archive_read_data(p->mpa->arch, buffer, size);
             if (r < 0) {
                 MP_ERR(s, "%s\n", archive_error_string(p->mpa->arch));
                 uselocale(oldlocale);
-                if (mp_archive_check_fatal(p->mpa, r)) {
-                    mp_archive_free(p->mpa);
-                    p->mpa = NULL;
-                }
                 return -1;
             }
             uselocale(oldlocale);
