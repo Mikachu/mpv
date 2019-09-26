@@ -170,13 +170,17 @@ static EGLDisplay egl_get_display(struct gbm_device *gbm_device)
 {
     EGLDisplay ret;
 
+#ifdef EGL_PLATFORM_GBM_MESA
     ret = mpegl_get_display(EGL_PLATFORM_GBM_MESA, "EGL_MESA_platform_gbm", gbm_device);
     if (ret != EGL_NO_DISPLAY)
         return ret;
+#endif
 
+#ifdef EGL_PLATFORM_GBM_KHR
     ret = mpegl_get_display(EGL_PLATFORM_GBM_KHR, "EGL_KHR_platform_gbm", gbm_device);
     if (ret != EGL_NO_DISPLAY)
         return ret;
+#endif
 
     return eglGetDisplay(gbm_device);
 }
