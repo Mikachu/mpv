@@ -279,7 +279,7 @@ static void vo_update_cursor(struct vo *vo)
     struct vo_x11_state *x11 = vo->x11;
     Display *disp = x11->display;
     Window win = x11->window;
-    bool should_hide = x11->has_focus && !x11->mouse_cursor_visible;
+    bool should_hide = /*x11->has_focus &&*/ !x11->mouse_cursor_visible;
 
     if (should_hide == x11->mouse_cursor_set)
         return;
