@@ -241,7 +241,7 @@ static void prepare_prefix(struct mp_log_root *root, bstr *out, int lev, int ter
     int line_skip = 0;
     if (root->status_lines) {
         // Clear previous status line
-        bstr_xappend(root, out, bstr0("\033[1K\r"));
+        bstr_xappend(root, out, bstr0(lev == MSGL_STATUS ? "\r" : "\033[1K\r"));
         bstr up_clear = bstr0("\033[A\033[K");
         for (int i = 1; i < root->status_lines; ++i)
             bstr_xappend(root, out, up_clear);
@@ -532,6 +532,10 @@ static void write_term_msg(struct mp_log *log, int lev, bstr text, bstr *out)
             int line_w;
             append_terminal_line(log, lev, line, &root->term_msg_tmp, &line_w,
                                  clip && term_w ? term_w : INT_MAX);
+            if (lev == MSGL_STATUS) {
+                root->term_msg_tmp.len--;
+                bstr_xappend(root, &root->term_msg_tmp, bstr0("\033[3K\n"));
+            }
             term_msg_lines += (!line_w || !term_w)
                                 ? 1 : (line_w + term_w - 1) / term_w;
         }
@@ -557,6 +561,8 @@ static void write_term_msg(struct mp_log *log, int lev, bstr text, bstr *out)
             set_term_color(root, &root->term_msg_tmp, -1);
         }
         bstr_xappend(root, out, root->term_msg_tmp);
+        if (lev == MSGL_STATUS)
+            bstr_xappend(root, out, bstr0("\033[3K"));
     }
 }
 
