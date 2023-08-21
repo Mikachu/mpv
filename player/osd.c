@@ -56,7 +56,7 @@ static void sadd_hhmmssff(char **buf, double time, bool fractions)
 
 static void sadd_percentage(char **buf, double ratio) {
     if (ratio >= 0)
-        *buf = talloc_asprintf_append(*buf, " (%.f%%)", ratio * 100);
+        *buf = talloc_asprintf_append(*buf, " (%3d%%)", (int)(ratio * 100));
 }
 
 static char *join_lines(void *ta_ctx, char **parts, int num_parts)
