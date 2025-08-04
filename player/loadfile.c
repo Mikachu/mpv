@@ -384,7 +384,7 @@ void update_demuxer_properties(struct MPContext *mpctx)
                 }
             }
             struct mp_log *log = mp_log_new(NULL, mpctx->log, "!display-tags");
-            if (!had_output)
+            if (!had_output && !mpctx->opts->msg_module)
                 mp_info(log, "File tags:\n");
             mp_info(log, " %s: ", info->keys[n]);
             const char *p = info->values[n];
