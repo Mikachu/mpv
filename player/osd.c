@@ -207,6 +207,11 @@ static char *get_term_status_msg(struct MPContext *mpctx)
     sadd_hhmmssff(&line, get_time_length(mpctx), opts->osd_fractions);
 
     sadd_percentage(&line, get_current_pos_ratio(mpctx, false));
+    int loops = mpctx->opts->loop_file;
+    if (loops > 0)
+        line = talloc_asprintf_append(line, " [%dx]", loops);
+    else if (loops < 0)
+        line = talloc_asprintf_append(line, " [infx]");
 
     // other
     if (opts->playback_speed != 1)
