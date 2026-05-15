@@ -15,6 +15,8 @@
  * with mpv.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -34,15 +36,19 @@
 #include <X11/XKBlib.h>
 #include <X11/XF86keysym.h>
 
+#if HAVE_XSCRNSAVER
 #include <X11/extensions/scrnsaver.h>
+#endif
 #include <X11/extensions/dpms.h>
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xrandr.h>
 
+#if HAVE_XPRESENT
 #ifndef PRESENT_FUTURE_VERSION
 #define PRESENT_FUTURE_VERSION 0
 #endif
 #include <X11/extensions/Xpresent.h>
+#endif
 
 #include "misc/bstr.h"
 #include "options/options.h"
@@ -1376,6 +1382,7 @@ void vo_x11_check_events(struct vo *vo)
             break;
         case GenericEvent: {
             XGenericEventCookie *cookie = (XGenericEventCookie *)&Event.xcookie;
+#if HAVE_XPRESENT
             if (cookie->extension == x11->present_code && x11->use_present)
             {
                 XGetEventData(x11->display, cookie);
@@ -1387,6 +1394,7 @@ void vo_x11_check_events(struct vo *vo)
                                                present_event->msc);
                 }
             }
+#endif
             XFreeEventData(x11->display, cookie);
             break;
         }
@@ -1619,6 +1627,7 @@ static void vo_x11_create_window(struct vo *vo, XVisualInfo *vis,
     Atom protos[1] = {XA(x11, WM_DELETE_WINDOW)};
     XSetWMProtocols(x11->display, x11->window, protos, 1);
 
+#if HAVE_XPRESENT
     if (!XPresentQueryExtension(x11->display, &x11->present_code, NULL, NULL)) {
         MP_VERBOSE(x11, "The XPresent extension is not supported.\n");
     } else {
@@ -1626,6 +1635,7 @@ static void vo_x11_create_window(struct vo *vo, XVisualInfo *vis,
         XPresentSelectInput(x11->display, x11->window, PresentCompleteNotifyMask);
     }
     xpresent_set(x11);
+#endif
 
     x11->mouse_cursor_set = false;
     x11->mouse_cursor_visible = true;
@@ -2271,9 +2281,11 @@ int vo_x11_control(struct vo *vo, int *events, int request, void *arg)
 
 void vo_x11_present(struct vo *vo)
 {
+#if HAVE_XPRESENT
     struct vo_x11_state *x11 = vo->x11;
     XPresentNotifyMSC(x11->display, x11->window,
                       0, 0, 1, 0);
+#endif
 }
 
 void vo_x11_wakeup(struct vo *vo)
@@ -2302,16 +2314,18 @@ void vo_x11_wait_events(struct vo *vo, int64_t until_time_ns)
 
 static void xscreensaver_heartbeat(struct vo_x11_state *x11)
 {
+    if (x11->screensaver_enabled)
+        return;
+
     double time = mp_time_sec();
 
-    if (x11->display && !x11->screensaver_enabled &&
-        (time - x11->screensaver_time_last) >= 10)
-    {
+    if (x11->display && (time - x11->screensaver_time_last) >= 10) {
         x11->screensaver_time_last = time;
         XResetScreenSaver(x11->display);
     }
 }
 
+#if HAVE_XSCRNSAVER
 static int xss_suspend(Display *mDisplay, Bool suspend)
 {
     int event, error, major, minor;
@@ -2323,6 +2337,7 @@ static int xss_suspend(Display *mDisplay, Bool suspend)
     XScreenSaverSuspend(mDisplay, suspend);
     return 1;
 }
+#endif
 
 static void set_screensaver(struct vo_x11_state *x11, bool enabled)
 {
@@ -2331,6 +2346,7 @@ static void set_screensaver(struct vo_x11_state *x11, bool enabled)
         return;
     MP_VERBOSE(x11, "%s screensaver.\n", enabled ? "Enabling" : "Disabling");
     x11->screensaver_enabled = enabled;
+#if HAVE_XSCRNSAVER
     if (xss_suspend(mDisplay, !enabled))
         return;
     int nothing;
@@ -2341,7 +2357,7 @@ static void set_screensaver(struct vo_x11_state *x11, bool enabled)
         if (!x11->dpms_touched && enabled)
             return; // enable DPMS only if we disabled it before
         if (enabled != !!onoff) {
-            MP_VERBOSE(x11, "Setting DMPS: %s.\n", enabled ? "on" : "off");
+            MP_VERBOSE(x11, "Setting DPMS: %s.\n", enabled ? "on" : "off");
             if (enabled) {
                 DPMSEnable(mDisplay);
             } else {
@@ -2353,6 +2369,7 @@ static void set_screensaver(struct vo_x11_state *x11, bool enabled)
                 MP_WARN(x11, "DPMS state could not be set.\n");
         }
     }
+#endif
 }
 
 static void vo_x11_selectinput_witherr(struct vo *vo,
