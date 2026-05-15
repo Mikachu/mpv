@@ -93,6 +93,8 @@ option('vaapi-win32', type: 'feature', value: 'auto', description: 'VAAPI (Windo
 option('vaapi-x11', type: 'feature', value: 'auto', description: 'VAAPI (X11 support)')
 option('vulkan', type: 'feature', value: 'auto', description: 'Vulkan context support')
 option('wayland', type: 'feature', value: 'auto', description: 'Wayland')
+option('xpresent', type: 'feature', value: 'auto', description: 'XPresent X11 extension')
+option('xscrnsaver', type: 'feature', value: 'auto', description: 'XScreenSaver X11 extension')
 option('x11', type: 'feature', value: 'auto', description: 'X11')
 option('xv', type: 'feature', value: 'auto', description: 'Xv video output')
 option('gpu-next', type: 'feature', value: 'disabled', description: 'gpu-next video output using libplacebo')
