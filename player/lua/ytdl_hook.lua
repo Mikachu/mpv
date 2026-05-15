@@ -735,7 +735,9 @@ local function add_single_video(json)
     msg.verbose("format selection: " .. format_info)
     msg.log("info", "streamurl: " .. streamurl)
 
+    msg.log("info", "")
     msg.log("info", json.description)
+    msg.log("info", "")
 
     mp.set_property("stream-open-filename", streamurl:gsub("^data:", "data://", 1))
 
