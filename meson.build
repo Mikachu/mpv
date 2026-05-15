@@ -1120,9 +1120,7 @@ x11_opt = get_option('x11').require(
 )
 x11 = {
     'deps': [dependency('x11', version: '>= 1.0.0', required: x11_opt),
-             dependency('xscrnsaver', version: '>= 1.0.0', required: x11_opt),
              dependency('xext', version: '>= 1.0.0', required: x11_opt),
-             dependency('xpresent', version: '>= 1.0.0', required: x11_opt),
              dependency('xrandr', version: '>= 1.4.0', required: x11_opt)],
 }
 x11_deps = true
@@ -1138,6 +1136,20 @@ if features['x11']
     dependencies += x11['deps']
     sources += files('video/out/vo_x11.c',
                      'video/out/x11_common.c')
+endif
+
+xpresent_opt = get_option('xpresent').require(features['x11'], error_message: 'x11 could not be found!')
+xpresent = dependency('xpresent', version: '>= 1.0.0', required: xpresent_opt)
+features += {'xpresent': xpresent.found()}
+if features['xpresent']
+    dependencies += xpresent
+endif
+
+xscrnsaver_opt = get_option('xscrnsaver').require(features['x11'], error_message: 'x11 could not be found!')
+xscrnsaver = dependency('xscrnsaver', version: '>= 1.0.0', required: xscrnsaver_opt)
+features += {'xscrnsaver': xscrnsaver.found()}
+if features['xscrnsaver']
+    dependencies += xscrnsaver
 endif
 
 xv_opt = get_option('xv').require(
