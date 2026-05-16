@@ -257,17 +257,17 @@ static void print_stream(struct MPContext *mpctx, struct track *t, bool indent)
     char b[2048] = {0};
 
     int max_lang_length = 0;
-    for (int n = 0; n < mpctx->num_tracks; n++) {
+    /*for (int n = 0; n < mpctx->num_tracks; n++) {
         if (mpctx->tracks[n]->lang)
             max_lang_length = MPMAX(strlen(mpctx->tracks[n]->lang), max_lang_length);
-    }
+    }*/
 
     if (indent)
         APPEND(b, " ");
-    APPEND(b, "%s %-5s  --%s=%-2d", t->selected ? BLACK_CIRCLE : WHITE_CIRCLE,
+    APPEND(b, "%s %-5s --%s=%d", t->selected ? BLACK_CIRCLE : WHITE_CIRCLE,
            tname, selopt, t->user_tid);
     if (t->lang) {
-        APPEND(b, " --%s=%-*s ", langopt, max_lang_length, t->lang);
+        APPEND(b, " --%s=%-*s", langopt, max_lang_length, t->lang);
     } else if (max_lang_length) {
         FILL(b, (int) strlen(" --alang= ") + max_lang_length);
     }
