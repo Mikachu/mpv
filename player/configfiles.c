@@ -205,7 +205,7 @@ char *mp_get_playback_resume_dir(struct MPContext *mpctx)
     if (wl_dir && wl_dir[0]) {
         wl_dir = mp_get_user_path(NULL, mpctx->global, wl_dir);
     } else {
-        wl_dir = mp_find_user_file(NULL, mpctx->global, "state", MP_WATCH_LATER_CONF);
+        wl_dir = mp_find_user_file(NULL, mpctx->global, "home", MP_WATCH_LATER_CONF);
     }
     return wl_dir;
 }
