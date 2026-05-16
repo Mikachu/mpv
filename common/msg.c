@@ -360,7 +360,7 @@ static void pretty_print_module(struct mp_log_root *root, bstr *text,
         set_term_color(root, text, (mod + 1) % 15 + 1);
     }
 
-    bstr_xappend_asprintf(root, text, "%*s", root->module_indent, prefix);
+    bstr_xappend_asprintf(root, text, "%*s", 10, prefix);
     if (color)
         set_term_color(root, text, -1);
     bstr_xappend(root, text, bstr0(": "));
