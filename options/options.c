@@ -943,7 +943,9 @@ static const m_option_t mp_opts[] = {
 
     {"", OPT_SUBSTRUCT(ra_ctx_opts, ra_ctx_conf)},
     {"", OPT_SUBSTRUCT(gl_video_opts, gl_video_conf)},
+#if HAVE_GPU_NEXT
     {"", OPT_SUBSTRUCT(gl_next_opts, gl_next_conf)},
+#endif
     {"", OPT_SUBSTRUCT(spirv_opts, spirv_conf)},
 
 #if HAVE_GL

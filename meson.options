@@ -95,6 +95,7 @@ option('vulkan', type: 'feature', value: 'auto', description: 'Vulkan context su
 option('wayland', type: 'feature', value: 'auto', description: 'Wayland')
 option('x11', type: 'feature', value: 'auto', description: 'X11')
 option('xv', type: 'feature', value: 'auto', description: 'Xv video output')
+option('gpu-next', type: 'feature', value: 'disabled', description: 'gpu-next video output using libplacebo')
 
 # hwaccel features
 option('android-media-ndk', type: 'feature', value: 'auto', description: 'Android Media APIs')
