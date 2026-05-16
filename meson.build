@@ -52,6 +52,8 @@ features = {
     'libplacebo': true,
 }
 
+features += {'gpu-next': get_option('gpu-next').allowed()}
+
 
 # generic sources
 sources = files(
@@ -264,12 +266,6 @@ sources = files(
     'video/repack.c',
     'video/sws_utils.c',
 
-    ## libplacebo
-    'video/out/placebo/ra_pl.c',
-    'video/out/placebo/utils.c',
-    'video/out/vo_gpu_next.c',
-    'video/out/gpu_next/context.c',
-
     ## osdep
     'osdep/io.c',
     'osdep/subprocess.c',
@@ -280,6 +276,16 @@ sources = files(
     'ta/ta_talloc.c',
     'ta/ta_utils.c',
 )
+
+if features['gpu-next']
+    sources += files(
+    ## gpu next
+    'video/out/placebo/ra_pl.c',
+    'video/out/placebo/utils.c',
+    'video/out/vo_gpu_next.c',
+    'video/out/gpu_next/context.c',
+    )
+endif
 
 
 # compiler stuff
@@ -1953,6 +1959,7 @@ endif
 summary({'cocoa': features['cocoa'] and features['swift'],
          'curl': features['libcurl'],
          'd3d11': features['d3d11'],
+         'gpu-next': features['gpu-next'],
          'drm': features['drm'],
          'javascript': features['javascript'],
          'libmpv': get_option('libmpv'),
