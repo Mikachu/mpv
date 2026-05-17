@@ -299,14 +299,15 @@ static void write_redirects_for_parent_dirs(struct MPContext *mpctx, char *path)
 void mp_write_watch_later_conf(struct MPContext *mpctx)
 {
     struct playlist_entry *cur = mpctx->playing;
-    char *conffile = NULL;
+    char *conffile = NULL, *filename = NULL;
 
     if (!cur)
         goto exit;
 
     struct demuxer *demux = mpctx->demuxer;
 
-    conffile = mp_get_playback_resume_config_filename(mpctx, cur->filename);
+    filename = mp_normalize_path(NULL, cur->filename);
+    conffile = mp_get_playback_resume_config_filename(mpctx, filename);
     if (!conffile)
         goto exit;
 
@@ -317,7 +318,7 @@ void mp_write_watch_later_conf(struct MPContext *mpctx)
     MP_INFO(mpctx, "Saving state.\n");
 
     bstr data = {0};
-    write_filename(mpctx, conffile, &data, cur->filename);
+    write_filename(mpctx, conffile, &data, filename);
 
     bool write_start = true;
     double pos = get_playback_time(mpctx);
@@ -358,33 +359,33 @@ void mp_write_watch_later_conf(struct MPContext *mpctx)
         goto exit;
     }
 
-    if (mpctx->opts->position_check_mtime && !mp_is_url(bstr0(cur->filename)) &&
-        !copy_mtime(cur->filename, conffile))
+    if (mpctx->opts->position_check_mtime && !mp_is_url(bstr0(filename)) &&
+        !copy_mtime(filename, conffile))
     {
         MP_WARN(mpctx, "Can't copy mtime from %s to %s\n", cur->filename,
                 conffile);
     }
 
-    write_redirects_for_parent_dirs(mpctx, cur->filename);
+    write_redirects_for_parent_dirs(mpctx, filename);
 
     // Also write redirect entries for a playlist that mpv expanded if the
     // current entry is a URL, this is mostly useful for playing multiple
     // archives of images, e.g. with mpv 1.zip 2.zip and quit-watch-later
     // on 2.zip, write redirect entries for 2.zip, not just for the archive://
     // URL.
-    if (cur->playlist_path && mp_is_url(bstr0(cur->filename))) {
+    if (cur->playlist_path && mp_is_url(bstr0(filename))) {
         write_redirect(mpctx, cur->playlist_path);
         write_redirects_for_parent_dirs(mpctx, cur->playlist_path);
     }
 
 exit:
+    talloc_free(filename);
     talloc_free(conffile);
 }
 
 void mp_delete_watch_later_conf(struct MPContext *mpctx, const char *file)
 {
-    char *path = file ? mp_normalize_path(NULL, file)
-                      : talloc_strdup(NULL, mpctx->filename);
+    char *path = mp_normalize_path(NULL, file ?: mpctx->filename);
     if (!path)
         goto exit;
 
@@ -419,11 +420,13 @@ bool mp_load_playback_resume(struct MPContext *mpctx, const char *file)
     bool resume = false;
     if (!mpctx->opts->position_resume)
         return resume;
-    char *fname = mp_get_playback_resume_config_filename(mpctx, file);
+    char *filename = mp_normalize_path(NULL, file);
+    char *fname = mp_get_playback_resume_config_filename(mpctx, filename);
     if (fname && mp_path_exists(fname)) {
         if (mpctx->opts->position_check_mtime &&
-            !mp_is_url(bstr0(file)) && !check_mtime(file, fname))
+            !mp_is_url(bstr0(filename)) && !check_mtime(filename, fname))
         {
+            talloc_free(filename);
             talloc_free(fname);
             return resume;
         }
@@ -435,6 +438,7 @@ bool mp_load_playback_resume(struct MPContext *mpctx, const char *file)
         try_load_config(mpctx, fname, M_SETOPT_PRESERVE_CMDLINE, MSGL_V);
         resume = true;
     }
+    talloc_free(filename);
     talloc_free(fname);
     return resume;
 }
@@ -451,9 +455,11 @@ struct playlist_entry *mp_check_playlist_resume(struct MPContext *mpctx,
         return NULL;
     for (int n = 0; n < playlist->num_entries; n++) {
         struct playlist_entry *e = playlist->entries[n];
-        char *conf = mp_get_playback_resume_config_filename(mpctx, e->filename);
+        char *normalized = mp_normalize_path(NULL, e->filename);
+        char *conf = mp_get_playback_resume_config_filename(mpctx, normalized);
         bool exists = conf && mp_path_exists(conf);
         talloc_free(conf);
+        talloc_free(normalized);
         if (exists)
             return e;
     }
