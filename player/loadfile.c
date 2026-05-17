@@ -2158,6 +2158,8 @@ terminate_playback:
     mp_assert(mpctx->stop_play);
 
     process_hooks(mpctx, "on_after_end_file");
+    if (mpctx->stop_play != PT_QUIT)
+        printf("\n");
 
     if (playlist_prev_continue) {
         struct playlist_entry *e = mp_next_file(mpctx, -1, false, true);
