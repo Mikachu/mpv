@@ -33,7 +33,6 @@ struct playlist_entry {
     uint64_t id;
 
     char *filename;
-    char *original_filename;
     char *playlist_path;
 
     struct playlist_param *params;
