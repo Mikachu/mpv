@@ -660,7 +660,7 @@ static void update_av_diff(struct MPContext *mpctx, double offset)
     }
 
     if (fabs(mpctx->last_av_difference) > 0.5 && !mpctx->drop_message_shown) {
-        MP_WARN(mpctx, "%s", av_desync_help_text);
+        MP_WARN(mpctx, "%s", "Audio/Video desynchronisation detected.");
         mpctx->drop_message_shown = true;
     }
 }
