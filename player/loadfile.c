@@ -1696,7 +1696,7 @@ static void append_to_watch_history(struct MPContext *mpctx)
     list->keys[1] = "path";
     list->values[1] = (struct mpv_node) {
         .format = MPV_FORMAT_STRING,
-        .u.string = mpctx->filename,
+        .u.string = mp_normalize_path(ctx, mpctx->filename),
     };
     if (title) {
         list->keys[2] = "title";
