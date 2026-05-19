@@ -149,6 +149,7 @@ static const m_option_t mp_vo_opt_list[] = {
     {"focus-on", OPT_CHOICE(focus_on, {"never", 0}, {"open", 1}, {"all", 2})},
     {"force-render", OPT_BOOL(force_render)},
     {"force-window-position", OPT_BOOL(force_window_position)},
+    {"center-window", OPT_BOOL(center_window)},
     {"x11-name", OPT_STRING(winname)},
     {"wayland-app-id", OPT_STRING(appid)},
     {"monitoraspect", OPT_FLOAT(force_monitor_aspect), M_RANGE(0.0, 9.0)},
@@ -295,6 +296,7 @@ const struct m_sub_options vo_sub_opts = {
         .timing_offset = 0.050,
         .swapchain_depth = 2,
         .focus_on = 1,
+        .center_window = true,
     },
 };
 
