@@ -374,6 +374,10 @@ static void ring_write(void *ctx, const char *data, size_t len)
     p->count += len;
 }
 
+#ifndef CURL_WRITEFUNC_ERROR
+#define CURL_WRITEFUNC_ERROR 0xFFFFFFFF
+#endif
+
 // Called per chunk of body data.
 static size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
