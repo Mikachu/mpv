@@ -130,7 +130,8 @@ void vo_calc_window_geometry(struct vo *vo, struct mp_vo_opts *opts,
     out_geo->win.x0 = (int)(scr_w - d_w) / 2;
     out_geo->win.y0 = (int)(scr_h - d_h) / 2;
 
-    bool center = (opts->force_window_position || force_pos) && !opts->geometry.xy_valid;
+    bool position_specified = opts->geometry.xy_valid;
+    bool center = opts->center_window && (opts->force_window_position || force_pos) && !position_specified;
     m_geometry_apply(&out_geo->win.x0, &out_geo->win.y0, &d_w, &d_h,
                      scr_w, scr_h, center, &opts->geometry);
 
@@ -148,7 +149,7 @@ void vo_calc_window_geometry(struct vo *vo, struct mp_vo_opts *opts,
     out_geo->win.x1 = out_geo->win.x0 + d_w;
     out_geo->win.y1 = out_geo->win.y0 + d_h;
 
-    if (opts->force_window_position || force_pos)
+    if (center || position_specified)
         out_geo->flags |= VO_WIN_FORCE_POS;
 }
 

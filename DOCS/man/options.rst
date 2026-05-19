@@ -3754,6 +3754,12 @@ Window
     the center of the screen if no geometry is specified. Currently only
     affects Windows, X11, macvk and SDL VOs. (default: no)
 
+``--center-window=<yes|no>``  
+    Center the window on the screen when it is first opened. When set to
+    ``no``, the window position is left to the window manager. Has no
+    effect if ``--geometry`` specifies an explicit position.
+    Currently disabling it only affects X11 correctly. (default: yes)
+
 ``--auto-window-resize=<yes|no>``
     By default, mpv will automatically resize itself if the video's size changes
     (i.e. advancing forward in a playlist). Setting this to ``no`` disables this
