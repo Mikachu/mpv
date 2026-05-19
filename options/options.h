@@ -75,6 +75,7 @@ typedef struct mp_vo_opts {
     float monitor_pixel_aspect;
     bool force_render;
     bool force_window_position;
+    bool center_window;
 
     int backdrop_type;
     int window_affinity;

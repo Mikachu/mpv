@@ -1427,12 +1427,13 @@ static void vo_x11_sizehint(struct vo *vo, struct mp_rect rc, bool override_pos)
                                            opts->screen_name[0]);
     bool fsscreen = opts->fsscreen_id >= 0 || (opts->fsscreen_name &&
                                                opts->fsscreen_name[0]);
-    bool force_pos = opts->geometry.xy_valid ||     // explicitly forced by user
-                     opts->force_window_position || // resize -> reset position
-                     screen || fsscreen          || // force onto screen area
-                     opts->screen_name ||           // also force onto screen area
-                     x11->parent ||                 // force to fill parent
-                     override_pos;                  // for fullscreen and such
+    bool force_pos = opts->geometry.xy_valid ||      // explicitly forced by user
+                     (opts->center_window &&         // resize -> reset position
+                     opts->force_window_position) || // if we have somewhere to reset to
+                     screen || fsscreen           || // force onto screen area
+                     opts->screen_name ||            // also force onto screen area
+                     x11->parent ||                  // force to fill parent
+                     override_pos;                   // for fullscreen and such
 
     XSizeHints *hint = XAllocSizeHints();
     MP_HANDLE_OOM(hint);
@@ -1662,11 +1663,11 @@ static void vo_x11_create_window(struct vo *vo, XVisualInfo *vis,
     vo_x11_xembed_update(x11, 0);
 }
 
-static void vo_x11_map_window(struct vo *vo, struct mp_rect rc)
+static void vo_x11_map_window(struct vo *vo, struct mp_rect rc, bool move)
 {
     struct vo_x11_state *x11 = vo->x11;
 
-    vo_x11_move_resize(vo, true, true, rc);
+    vo_x11_move_resize(vo, move, true, rc);
     vo_x11_decoration(vo, x11->opts->border, x11->opts->title_bar);
 
     if (x11->opts->fullscreen && (x11->wm_type & vo_wm_FULLSCREEN)) {
@@ -1838,7 +1839,8 @@ void vo_x11_config_vo_window(struct vo *vo)
 
     if (x11->window_hidden) {
         x11->nofsrc = rc;
-        vo_x11_map_window(vo, rc);
+        bool has_screen = opts->screen_id >= 0 || (opts->screen_name && opts->screen_name[0]);
+        vo_x11_map_window(vo, rc, opts->center_window || opts->geometry.xy_valid || has_screen);
     } else if (reset_size) {
         vo_x11_highlevel_resize(vo, rc, geo.flags & VO_WIN_FORCE_POS);
     }
