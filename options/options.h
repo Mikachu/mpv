@@ -275,6 +275,7 @@ typedef struct MPOpts {
     char *term_osd_bar_chars;
     char *term_title;
     bool term_keep_output;
+    bool term_osd_permanent;
     char *playing_msg;
     char *osd_playing_msg;
     int osd_playing_msg_duration;

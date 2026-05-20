@@ -5455,6 +5455,9 @@ Terminal
 
     The ``auto`` mode also enables terminal OSD if ``--video-osd=no`` was set.
 
+``--term-osd-permanent=<yes|no>``
+    Print terminal OSD messages directly as any other message. Default: no.
+
 ``--term-keep-output=<yes|no>``
     Keep terminal OSD messages visible until another one is shown. Otherwise
     they are cleared after the display duration expires. Default: no.
