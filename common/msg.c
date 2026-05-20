@@ -219,6 +219,7 @@ static inline bool is_status_output(struct mp_log_root *root, int lev)
 static void prepare_prefix(struct mp_log_root *root, bstr *out, int lev, int term_lines)
 {
     int new_lines = lev == MSGL_STATUS ? term_lines : 0;
+    bool shrinking = lev == MSGL_STATUS && new_lines < root->blank_lines;
     out->len = 0;
 
     if (!is_status_output(root, lev))
@@ -249,15 +250,15 @@ static void prepare_prefix(struct mp_log_root *root, bstr *out, int lev, int ter
         line_skip = root->blank_lines - root->status_lines;
     }
 
-    if (new_lines)
+    if (new_lines && !shrinking)
         line_skip -= MPMAX(0, root->blank_lines - new_lines);
 
     if (line_skip)
         bstr_xappend_asprintf(root, out, line_skip > 0 ? "\033[%dA" : "\033[%dB", abs(line_skip));
 
-    root->blank_lines = MPMAX(0, root->blank_lines - term_lines);
     root->status_lines = new_lines;
-    root->blank_lines += root->status_lines;
+    root->blank_lines = shrinking ? new_lines
+                                  : MPMAX(0, root->blank_lines - term_lines) + new_lines;
 }
 
 static void msg_flush_status_line(struct mp_log_root *root, bool clear)
@@ -555,14 +556,18 @@ static void write_term_msg(struct mp_log *log, int lev, bstr text, bstr *out)
     }
 
     if (print_term && (root->term_msg_tmp.len || lev == MSGL_STATUS)) {
+        bool shrinking = lev == MSGL_STATUS && term_msg_lines < root->blank_lines;
         prepare_prefix(root, out, lev, term_msg_lines);
         if (root->color[fileno] && root->term_msg_tmp.len) {
             set_msg_color(root, out, lev);
             set_term_color(root, &root->term_msg_tmp, -1);
         }
         bstr_xappend(root, out, root->term_msg_tmp);
-        if (lev == MSGL_STATUS)
+        if (lev == MSGL_STATUS) {
             bstr_xappend(root, out, bstr0("\033[3K"));
+            if (shrinking)
+                bstr_xappend(root, out, bstr0("\033[J"));
+        }
     }
 }
 
