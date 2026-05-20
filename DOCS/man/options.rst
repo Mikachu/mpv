@@ -5455,6 +5455,10 @@ Terminal
 
     The ``auto`` mode also enables terminal OSD if ``--video-osd=no`` was set.
 
+``--term-keep-output=<yes|no>``
+    Keep terminal OSD messages visible until another one is shown. Otherwise
+    they are cleared after the display duration expires. Default: no.
+
 ``--term-osd-bar=<yes|no>``
     Enable printing a progress bar under the status line on the terminal.
     (Disabled by default.)
