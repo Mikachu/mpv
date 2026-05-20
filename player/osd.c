@@ -326,8 +326,14 @@ static bool set_osd_msg_va(struct MPContext *mpctx, int level, int time,
     if (level > mpctx->opts->osd_level)
         return false;
 
+    char *text = talloc_vasprintf(mpctx, fmt, ap);
+    if (mpctx->opts->term_osd_permanent && *text) {
+        MP_INFO(mpctx, "%s\n", text);
+        talloc_free(text);
+        return true;
+    }
     talloc_free(mpctx->osd_msg_text);
-    mpctx->osd_msg_text = talloc_vasprintf(mpctx, fmt, ap);
+    mpctx->osd_msg_text = text;
     mpctx->osd_show_pos = false;
     mpctx->osd_msg_next_duration = time / 1000.0;
     mpctx->osd_force_update = true;
