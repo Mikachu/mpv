@@ -138,7 +138,13 @@ void term_osd_set_subs(struct MPContext *mpctx, const char *text, int order)
 static void term_osd_set_text_lazy(struct MPContext *mpctx, const char *text)
 {
     bool video_osd = mpctx->video_out && mpctx->opts->video_osd;
-    if ((video_osd && mpctx->opts->term_osd != 1) || !text)
+    if (!text) {
+        if (mpctx->opts->term_keep_output)
+            return;
+        else
+            text = "";
+    }
+    if (video_osd && mpctx->opts->term_osd != 1)
         text = ""; // disable
     talloc_replace(mpctx, mpctx->term_osd_text, text);
 }
