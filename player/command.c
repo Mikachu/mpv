@@ -2035,7 +2035,7 @@ static int mp_property_switch_track(void *ctx, struct m_property *prop,
                 track = track_next(mpctx, type, sarg->inc >= 0 ? +1 : -1, track);
                 mp_switch_track_n(mpctx, order, type, track, FLAG_MARK_SELECTION);
             } while (mpctx->current_track[order][type] != track);
-            print_track_list(mpctx, "Track switched:");
+            //print_track_list(mpctx, "Track switched:");
         } else {
             // Simply cycle between "no" and "auto". It's possible that this does
             // not always do what the user means, but keep the complexity low.
@@ -6650,7 +6650,7 @@ static void cmd_track_add(void *p)
         if (t) {
             if (mpctx->playback_initialized) {
                 mp_switch_track(mpctx, t->type, t, FLAG_MARK_SELECTION);
-                print_track_list(mpctx, "Track switched:");
+                //print_track_list(mpctx, "Track switched:");
             } else {
                 mark_track_selection(mpctx, 0, t->type, t->user_tid);
             }
@@ -8200,7 +8200,7 @@ static void update_track_switch(struct MPContext *mpctx, int order, int type)
         track = mp_track_by_tid(mpctx, type, tid);
     }
     mp_switch_track_n(mpctx, order, type, track, (tid == -1) ? 0 : FLAG_MARK_SELECTION);
-    print_track_list(mpctx, "Track switched:");
+    //print_track_list(mpctx, "Track switched:");
     mp_wakeup_core(mpctx);
 }
 
@@ -8411,8 +8411,8 @@ void mp_option_run_callback(struct MPContext *mpctx, struct mp_option_callback *
                         demux_flush(demuxer);
                     }
                     mp_notify_property(mpctx, "current-edition");
-                    print_track_list(mpctx,
-                        mp_tprintf(42, "Selected edition %d:", demuxer->edition));
+                    //print_track_list(mpctx,
+                        //mp_tprintf(42, "Selected edition %d:", demuxer->edition));
                 } else {
                     if (!mpctx->stop_play)
                         mpctx->stop_play = PT_CURRENT_ENTRY;
