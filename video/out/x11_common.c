@@ -1325,7 +1325,7 @@ void vo_x11_check_events(struct vo *vo)
                 break;
             mp_input_put_key(x11->input_ctx, MP_KEY_MOUSE_ENTER);
             break;
-        case ButtonPress:
+        case ButtonPress: {
             if (Event.xbutton.button - 1 >= MP_KEY_MOUSE_BTN_COUNT)
                 break;
             mp_input_put_key(x11->input_ctx,
@@ -1335,6 +1335,7 @@ void vo_x11_check_events(struct vo *vo)
             vo_x11_xembed_send_message(x11, msg);
             x11->last_button_event = Event;
             break;
+        }
         case ButtonRelease:
             if (Event.xbutton.button - 1 >= MP_KEY_MOUSE_BTN_COUNT)
                 break;
