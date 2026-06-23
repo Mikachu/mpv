@@ -338,7 +338,7 @@ static void mp_seek(MPContext *mpctx, struct seek_params seek)
 
     // Under certain circumstances, prefer SEEK_FACTOR.
     if (seek.type == MPSEEK_FACTOR && !hr_seek &&
-        (mpctx->demuxer->ts_resets_possible || seek_pts == MP_NOPTS_VALUE))
+        seek_pts == MP_NOPTS_VALUE)
     {
         demux_pts = seek.amount;
         demux_flags |= SEEK_FACTOR;
