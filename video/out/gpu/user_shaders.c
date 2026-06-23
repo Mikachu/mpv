@@ -310,7 +310,7 @@ bool eval_szexpr(struct mp_log *log, void *priv,
             }
             continue;
 
-        case SZEXP_OP2:
+        case SZEXP_OP2: {
             if (idx < 2) {
                 mp_warn(log, "Stack underflow in RPN expression!\n");
                 return false;
@@ -339,7 +339,7 @@ bool eval_szexpr(struct mp_log *log, void *priv,
 
             stack[idx++] = res;
             continue;
-
+        }
         case SZEXP_VAR_W:
         case SZEXP_VAR_H: {
             struct bstr name = expr[i].val.varname;
@@ -353,7 +353,7 @@ bool eval_szexpr(struct mp_log *log, void *priv,
 
             stack[idx++] = (expr[i].tag == SZEXP_VAR_W) ? size[0] : size[1];
             continue;
-            }
+        }
         case SZEXP_VAR: {
             struct bstr name = expr[i].val.varname;
             float value;

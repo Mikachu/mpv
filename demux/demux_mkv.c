@@ -3264,14 +3264,14 @@ static int read_block_group(demuxer_t *demuxer, int64_t end,
                 goto error;
             break;
 
-        case MATROSKA_ID_REFERENCEBLOCK:;
+        case MATROSKA_ID_REFERENCEBLOCK: {
             int64_t num = ebml_read_int(s);
             if (num == EBML_INT_INVALID)
                 goto error;
             block->keyframe = false;
             break;
-
-        case MATROSKA_ID_BLOCKADDITIONS:;
+        }
+        case MATROSKA_ID_BLOCKADDITIONS: {
             struct ebml_block_additions additions = {0};
             struct ebml_parse_ctx parse_ctx = {demuxer->log};
             if (ebml_read_element(s, &parse_ctx, &additions,
@@ -3284,7 +3284,7 @@ static int read_block_group(demuxer_t *demuxer, int64_t end,
             }
             talloc_free(parse_ctx.talloc_ctx);
             break;
-
+        }
         case MATROSKA_ID_CLUSTER:
         case EBML_ID_INVALID:
             goto error;
@@ -3355,7 +3355,7 @@ static int read_next_block_into_queue(demuxer_t *demuxer)
             case EBML_ID_INVALID:
                 goto find_next_cluster;
 
-            default: ;
+            default:
                 if (ebml_read_skip(demuxer->log, mkv_d->cluster_end, s) != 0)
                     goto find_next_cluster;
                 break;

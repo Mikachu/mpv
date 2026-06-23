@@ -163,7 +163,7 @@ static void parse_vdr_par_string(const char *vdr_par_str, dvb_channel_t *ptr)
             ptr->is_dvb_x2 = *vdr_par == '1';
             vdr_par++;
             break;
-        case 'P':
+        case 'P': {
             vdr_par++;
             char *endptr = NULL;
             errno = 0;
@@ -173,6 +173,7 @@ static void parse_vdr_par_string(const char *vdr_par_str, dvb_channel_t *ptr)
                 vdr_par = endptr;
             }
             break;
+        }
         case 'I':
             vdr_par++;
             ptr->inv = (*vdr_par == '1') ? INVERSION_ON : INVERSION_OFF;
