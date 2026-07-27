@@ -74,6 +74,7 @@
 #include "video/out/bitmap_packer.h"
 #include "options/path.h"
 #include "screenshot.h"
+#include "misc/codepoint_width.h"
 #include "misc/dispatch.h"
 #include "misc/language.h"
 #include "misc/node.h"
@@ -377,12 +378,55 @@ static int count_lines(char *text)
     return count;
 }
 
+// Returns the number of visual terminal rows a single logical line occupies,
+// accounting for wrapping. term_width <= 0 means unknown; returns 1.
+static int visual_rows_for_line(const char *start, const char *end, int term_width)
+{
+    if (term_width <= 0)
+        return 1;
+    bstr line = {(unsigned char *)start, end - start};
+    int dw = term_disp_width(line, INT_MAX, NULL);
+    return MPMAX(1, (dw + term_width - 1) / term_width);
+}
+
+// Like skip_n_lines but counts visual rows (accounting for line wrapping).
+// Stops before including a line that would exceed the row budget.
+static char *skip_n_visual_rows(char *text, int rows, int term_width)
+{
+    while (text && rows > 0) {
+        char *next = strchr(text, '\n');
+        int line_rows = visual_rows_for_line(text,
+                            next ? next : text + strlen(text), term_width);
+        if (line_rows > rows)
+            break;
+        rows -= line_rows;
+        text = next ? next + 1 : NULL;
+    }
+    return text;
+}
+
+// Like count_lines but sums visual rows instead of logical lines.
+static int count_visual_rows(char *text, int term_width)
+{
+    if (!text[0])
+        return 0;
+    int count = 0;
+    while (text) {
+        char *next = strchr(text, '\n');
+        count += visual_rows_for_line(text,
+                     next ? next : text + strlen(text), term_width);
+        if (!next || (next[0] == '\n' && !next[1]))
+            break;
+        text = next + 1;
+    }
+    return count;
+}
+
 // Given a huge string separated by new lines, attempts to cut off text above
 // the current line to keep the line visible, and below to keep rendering
 // performance up. pos gives the current line (0 for the first line).
 // "text" might be returned as is, or it can be freed and a new allocation is
 // returned.
-// This is only a heuristic - we can't deal with line breaking.
 static char *cut_osd_list(struct MPContext *mpctx, int action, char *header,
                           char *text, int pos)
 {
@@ -391,6 +435,7 @@ static char *cut_osd_list(struct MPContext *mpctx, int action, char *header,
         return text;
 
     int max_lines;
+    int term_width = -1;
     if (action == M_PROPERTY_PRINT_UNCUT) {
         max_lines = count + 1;
     } else if (mpctx->video_out && mpctx->opts->video_osd) {
@@ -398,12 +443,13 @@ static char *cut_osd_list(struct MPContext *mpctx, int action, char *header,
         osd_get_text_size(mpctx->osd, &screen_h, &font_h);
         max_lines = screen_h / MPMAX(font_h, 1);
     } else {
-        int w = -1;
         max_lines = 24;
-        terminal_get_size(&w, &max_lines);
+        terminal_get_size(&term_width, &max_lines);
+        term_width -= mp_msg_prefix_width(mpctx->log, MSGL_INFO);
+        if (term_width < 0) term_width = 0;
         // Its lists are printed uncut, so this does not end up here again.
         char *msg = mp_expand_term_status_msg(mpctx);
-        max_lines -= msg[0] ? count_lines(msg) : 1;
+        max_lines -= msg[0] ? count_visual_rows(msg, term_width) : 1;
         talloc_free(msg);
     }
     // Subtract 1 for the header.
@@ -413,7 +459,7 @@ static char *cut_osd_list(struct MPContext *mpctx, int action, char *header,
     if (max_lines > 0) {
         int start = MPMIN(MPMAX(pos - max_lines / 2, 0), count - max_lines);
         char *head = skip_n_lines(text, start);
-        char *tail = skip_n_lines(head, max_lines);
+        char *tail = skip_n_visual_rows(head, max_lines, term_width);
         new = talloc_asprintf_append_buffer(new, "%.*s",
                                 (int)(tail ? tail - head : strlen(head)), head);
     }
