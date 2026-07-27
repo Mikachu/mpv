@@ -346,6 +346,32 @@ static void set_msg_color(void *talloc_ctx, bstr *text, int lev)
     set_term_color(talloc_ctx, text, v_colors[lev]);
 }
 
+int mp_msg_prefix_width(struct mp_log *log, int lev)
+{
+    struct mp_log_root *root = log->root;
+    if (!root || !root->use_terminal)
+        return 0;
+
+    int width = 0;
+
+    if (root->show_time)
+        width += 12; // "[%10.6f] " = 12 columns
+
+    const char *log_prefix = (lev >= MSGL_V) || root->verbose || root->module
+                                ? log->verbose_prefix : log->prefix;
+    if (log_prefix) {
+        if (root->module) {
+            // pretty_print_module: "%*s" with width 10, then ": "
+            width += MPMAX(10, (int)strlen(log_prefix)) + 2;
+        } else {
+            // "[prefix] "
+            width += (int)strlen(log_prefix) + 3;
+        }
+    }
+
+    return width;
+}
+
 static void pretty_print_module(struct mp_log_root *root, bstr *text,
                                 const char *prefix, int lev)
 {
