@@ -2067,6 +2067,8 @@ terminate_playback:
         m_config_notify_change_opt_ptr(mpctx->mconfig, &opts->pause);
     }
 
+    term_osd_clear_text(mpctx);
+
     process_hooks(mpctx, "on_unload");
 
     // time to uninit all, except global stuff:
