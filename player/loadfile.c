@@ -1852,10 +1852,7 @@ static void play_current_file(struct MPContext *mpctx)
     mp_filter_graph_set_wakeup_cb(mpctx->filter_root, mp_wakeup_core_cb, mpctx);
     mp_filter_graph_set_max_run_time(mpctx->filter_root, 0.1);
 
-    talloc_replace(mpctx, mpctx->term_osd_text, "");
-    talloc_free(mpctx->osd_msg_text);
-    mpctx->osd_msg_text = NULL;
-    mpctx->osd_msg_visible = 0;
+    term_osd_clear_text(mpctx);
     reset_playback_state(mpctx);
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
@@ -2130,6 +2127,8 @@ terminate_playback:
         opts->pause = true;
         m_config_notify_change_opt_ptr(mpctx->mconfig, &opts->pause);
     }
+
+    term_osd_clear_text(mpctx);
 
     process_hooks(mpctx, "on_unload");
 

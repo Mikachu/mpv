@@ -515,6 +515,16 @@ static void add_seek_osd_messages(struct MPContext *mpctx)
     mpctx->add_osd_seek_info = 0;
 }
 
+void term_osd_clear_text(struct MPContext *mpctx)
+{
+    talloc_replace(mpctx, mpctx->term_osd_text, "");
+    talloc_free(mpctx->osd_msg_text);
+    mpctx->osd_msg_text = NULL;
+    mpctx->osd_msg_visible = 0;
+    mpctx->osd_show_pos = false;
+    term_osd_update(mpctx);
+}
+
 // Update the OSD text (both on VO and terminal status line).
 void update_osd_msg(struct MPContext *mpctx)
 {
