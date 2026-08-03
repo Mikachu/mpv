@@ -194,6 +194,10 @@ mp.observe_property("profile-list", "native", function (_, profiles_property)
     load_profiles(profiles_property)
 
     if #profiles < 1 and mp.get_property("load-auto-profiles") == "auto" then
+        for h in pairs(pending_hooks) do
+            pending_hooks[h] = nil
+            h:cont()
+        end
         exit()
         return
     end
