@@ -204,7 +204,7 @@ bool mp_hook_test_completion(struct MPContext *mpctx, char *type)
         struct hook_handler *h = cmd->hooks[n];
         if (h->active && strcmp(h->type, type) == 0) {
             if (!mp_client_id_exists(mpctx, h->client_id)) {
-                MP_WARN(mpctx, "client removed during hook handling\n");
+                MP_WARN(mpctx, "client removed during hook handling client %s - type %s\n", h->type, h->client);
                 // Trigger completion of this hook and continue with the next one.
                 mp_hook_continue(mpctx, h->client_id, h->seq);
                 hook_remove(mpctx, h);
