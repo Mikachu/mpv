@@ -394,9 +394,9 @@ void update_demuxer_properties(struct MPContext *mpctx)
                 p += len;
                 if (*p == '\r')
                     mp_info(log, " ");
-                // Align continued lines with header
+                // Indent continued lines one extra space
                 if (*p == '\n')
-                    mp_info(log, "\n %-*s  ", (int)strlen(info->keys[n]), "");
+                    mp_info(log, "\n  ");
                 if (*p)
                     p++;
             }
