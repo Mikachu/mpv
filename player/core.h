@@ -379,6 +379,19 @@ typedef struct MPContext {
     /* timestamp of video frame currently visible on screen
      * (or at least queued to be flipped by VO) */
     double video_pts;
+    // State for the video-stall watchdog (check_video_stall()): the last
+    // video_pts value observed, and the wall-clock time (mp_time_sec()) at
+    // which video_pts was last seen to change while actively playing.
+    // Reset on seek/restart so a fresh seek doesn't immediately re-trigger
+    // the watchdog against stale state.
+    double stall_check_pts;
+    double stall_check_audio_pts;
+    double stall_check_time;
+    // True if the watchdog was excluded (paused/buffering/seeking/etc.) on
+    // the previous tick it ran; used to force a baseline reset on the
+    // exact tick playback resumes, instead of measuring stall time across
+    // the entire excluded period (e.g. a manual pause).
+    bool stall_check_was_excluded;
     // Last seek target.
     double last_seek_pts;
     // Frame duration field from demuxer. Only used for duration of the last
@@ -680,6 +693,7 @@ void reinit_video_chain_src(struct MPContext *mpctx, struct track *track);
 int reinit_video_filters(struct MPContext *mpctx);
 void write_video(struct MPContext *mpctx);
 void mp_force_video_refresh(struct MPContext *mpctx);
+void check_video_stall(struct MPContext *mpctx);
 void uninit_video_out(struct MPContext *mpctx);
 void uninit_video_chain(struct MPContext *mpctx);
 double calc_average_frame_duration(struct MPContext *mpctx);

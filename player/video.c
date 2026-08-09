@@ -318,6 +318,79 @@ void mp_force_video_refresh(struct MPContext *mpctx)
     }
 }
 
+// Watchdog: if we're actively playing (not paused, not buffering, not at
+// EOF, no seek already pending) but the displayed video frame hasn't
+// advanced for far longer than the expected frame duration would allow,
+// assume some part of the decode/output pipeline got stuck (e.g. a missed
+// thread wakeup) and force a refresh seek to the current position to kick
+// it back into motion.
+//
+// Deliberately calls issue_refresh_seek() directly rather than going
+// through mp_force_video_refresh(): that function only issues the seek if
+// opts->pause is set, time_frame >= 0.5, or we're at EOF -- none of which
+// reliably hold in the stuck-but-supposedly-playing case this watchdog is
+// meant to catch (time_frame tends to be stuck near/below zero, not >= 0.5,
+// when we're overdue for a frame that never arrives).
+void check_video_stall(struct MPContext *mpctx)
+{
+    struct vo_chain *vo_c = mpctx->vo_chain;
+    if (!vo_c || get_internal_paused(mpctx) ||
+        mpctx->video_status != STATUS_PLAYING ||
+        mpctx->seek.type || mpctx->current_seek.type)
+    {
+        mpctx->stall_check_pts = mpctx->video_pts;
+        mpctx->stall_check_audio_pts = written_audio_pts(mpctx);
+        mpctx->stall_check_time = mp_time_sec();
+        mpctx->stall_check_was_excluded = true;
+        return;
+    }
+
+    // Consider audio "active" only while it's genuinely playing back; once
+    // it hits EOF (or was never present) it can no longer serve as
+    // evidence that the pipeline is alive, so fall back to video_pts alone.
+    bool audio_active = mpctx->audio_status == STATUS_PLAYING;
+    double audio_pts = audio_active ? written_audio_pts(mpctx) : MP_NOPTS_VALUE;
+
+    bool video_advanced = mpctx->video_pts != mpctx->stall_check_pts;
+    bool audio_advanced = audio_active &&
+                          (audio_pts == MP_NOPTS_VALUE ||
+                           mpctx->stall_check_audio_pts == MP_NOPTS_VALUE ||
+                           audio_pts != mpctx->stall_check_audio_pts);
+
+    // On the exact tick we transition out of an excluded state (e.g. right
+    // after unpausing, or right after a seek/buffering period finishes),
+    // treat this as a fresh baseline rather than measuring stall time
+    // across however long we were excluded for -- that time is legitimate
+    // and not a symptom of anything being stuck.
+    if (mpctx->stall_check_was_excluded || video_advanced || audio_advanced) {
+        mpctx->stall_check_pts = mpctx->video_pts;
+        mpctx->stall_check_audio_pts = audio_pts;
+        mpctx->stall_check_time = mp_time_sec();
+        mpctx->stall_check_was_excluded = false;
+        return;
+    }
+
+    float fps = vo_c->filter->container_fps;
+    // same "crappy heuristic" caveat as check_framedrop(): avoid getting
+    // upset by incorrect/sparse fps values.
+    if (fps <= 1 || fps >= 500)
+        return;
+
+    double stall_time = mp_time_sec() - mpctx->stall_check_time;
+    double threshold = MPMAX(2.0, 20.0 / fps); // generous margin
+    if (audio_active)
+        threshold = 0.5;
+
+    if (stall_time > threshold) {
+        MP_WARN(mpctx, "Video frame stuck for %f s, forcing refresh seek.\n",
+                stall_time);
+        // Avoid immediately re-triggering against the same stale pts/time
+        // while the refresh seek is still resolving.
+        mpctx->stall_check_time = mp_time_sec();
+        issue_refresh_seek(mpctx, MPSEEK_VERY_EXACT);
+    }
+}
+
 static void check_framedrop(struct MPContext *mpctx, struct vo_chain *vo_c)
 {
     struct MPOpts *opts = mpctx->opts;
