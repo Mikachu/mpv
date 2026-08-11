@@ -671,7 +671,7 @@ static void ao_process(struct mp_filter *f)
     // Due to mp_async_queue_set_notifier() this function is called when the
     // queue becomes full. This affects state changes in the normal playloop,
     // so wake it up. But avoid redundant wakeups during normal playback.
-    if (mpctx->audio_status != STATUS_PLAYING &&
+    if ((mpctx->audio_status != STATUS_PLAYING || ao_c->ao_underrun) &&
         mp_async_queue_is_full(ao_c->ao_queue))
         mp_wakeup_core(mpctx);
 
