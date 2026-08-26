@@ -528,24 +528,23 @@ static int vo_x11_select_screen(struct vo *vo)
     int screen = -2; // all displays
     if (!opts->fullscreen || opts->fsscreen_id != -2) {
         screen = opts->fullscreen ? opts->fsscreen_id : opts->screen_id;
-        if (opts->fullscreen && opts->fsscreen_id == -1)
+        char *screen_name = opts->fullscreen ? opts->fsscreen_name : opts->screen_name;
+
+        if (opts->fullscreen && screen == -1 && !screen_name)
             screen = opts->screen_id;
 
-        if (screen == -1 && (opts->fsscreen_name || opts->screen_name)) {
-            char *screen_name = opts->fullscreen ? opts->fsscreen_name : opts->screen_name;
-            if (screen_name) {
-                bool screen_found = false;
-                for (int n = 0; n < x11->num_displays; n++) {
-                    char *display_name = x11->displays[n].name;
-                    if (!strcmp(display_name, screen_name)) {
-                        screen = n;
-                        screen_found = true;
-                        break;
-                    }
+        if (screen == -1 && screen_name) {
+            bool screen_found = false;
+            for (int n = 0; n < x11->num_displays; n++) {
+                char *display_name = x11->displays[n].name;
+                if (!strcmp(display_name, screen_name)) {
+                    screen = n;
+                    screen_found = true;
+                    break;
                 }
-                if (!screen_found)
-                    MP_WARN(x11, "Screen name %s not found!\n", screen_name);
             }
+            if (!screen_found)
+                MP_WARN(x11, "Screen name %s not found!\n", screen_name);
         }
 
         if (screen >= x11->num_displays)
