@@ -846,6 +846,7 @@ static void handle_update_subtitles(struct MPContext *mpctx)
     }
 }
 
+#define CURSOR_UNHIDE_THRESHOLD 10
 static void handle_cursor_autohide(struct MPContext *mpctx)
 {
     struct MPOpts *opts = mpctx->opts;
@@ -857,11 +858,26 @@ static void handle_cursor_autohide(struct MPContext *mpctx)
     bool mouse_cursor_visible = mpctx->mouse_cursor_visible;
     double now = mp_time_sec();
 
+    int x, y, hover;
+    mp_input_get_mouse_pos(mpctx->input, &x, &y, &hover);
+
     unsigned mouse_event_ts = mp_input_get_mouse_event_counter(mpctx->input);
     if (mpctx->mouse_event_ts != mouse_event_ts) {
         mpctx->mouse_event_ts = mouse_event_ts;
-        mpctx->mouse_timer = now + opts->cursor_autohide_delay / 1000.0;
-        mouse_cursor_visible = true;
+        mpctx->mouse_last_event_time = now;
+
+        int dist = abs(x - mpctx->mouse_unhide_x) + abs(y - mpctx->mouse_unhide_y);
+        if (dist >= CURSOR_UNHIDE_THRESHOLD) {
+            mpctx->mouse_timer = now + opts->cursor_autohide_delay / 1000.0;
+            mouse_cursor_visible = true;
+            mpctx->mouse_unhide_x = x;
+            mpctx->mouse_unhide_y = y;
+        }
+    }
+
+    if (now - mpctx->mouse_last_event_time >= opts->cursor_autohide_delay / 1000.0) {
+        mpctx->mouse_unhide_x = x;
+        mpctx->mouse_unhide_y = y;
     }
 
     if (mpctx->mouse_timer > now) {

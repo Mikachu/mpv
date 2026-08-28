@@ -322,6 +322,7 @@ local state = {
     marginsREQ = false,                     -- is a margins update pending?
     mouse_stateREQ = false,                 -- is a mouse state update pending?
     last_mouseX = nil, last_mouseY = nil,   -- last mouse position, to detect significant mouse movement
+    last_mousemove_time = nil,              -- time last_mouseX/Y was actually updated
     last_touchX = -1, last_touchY = -1,     -- last touch position
     mouse_in_window = false,
     hover_sec = -1,
@@ -2778,6 +2779,7 @@ local function mouse_leave()
     end
     -- reset mouse position
     state.last_mouseX, state.last_mouseY = nil, nil
+    state.last_mousemove_time = nil
     state.mouse_in_window = false
 end
 
@@ -2809,17 +2811,30 @@ local function process_mouse_move(refresh)
         state.mouse_in_window = recently_touched() or mp.get_property_bool("mouse-pos/hover")
         if not state.mouse_in_window then
             state.last_mouseX, state.last_mouseY = nil, nil
+            state.last_mousemove_time = nil
             return
         end
     end
 
-    local mouseX, mouseY = get_virt_mouse_pos()
-    if refresh or user_opts.minmousemove == 0 or
-        ((state.last_mouseX ~= nil and state.last_mouseY ~= nil) and
-            ((math.abs(mouseX - state.last_mouseX) >= user_opts.minmousemove)
-                or (math.abs(mouseY - state.last_mouseY) >= user_opts.minmousemove)
-            )
-        ) then
+    local mouseX, mouseY = mp.get_mouse_pos()
+    local now = mp.get_time()
+
+    -- Treat the previous baseline as stale once the mouse has been idle
+    -- for at least one hide-timeout, so old sub-threshold movement
+    -- doesn't combine with later unrelated movement to spuriously cross
+    -- minmousemove. Skip this when autohide is disabled (hidetimeout < 0).
+    local baseline_stale = state.last_mousemove_time and get_hidetimeout() >= 0 and
+        now - state.last_mousemove_time >= get_hidetimeout() / 1000
+
+    local have_baseline = state.last_mouseX ~= nil and state.last_mouseY ~= nil and
+        not baseline_stale
+
+    local moved_enough = refresh or user_opts.minmousemove == 0 or
+        (have_baseline and
+            (math.abs(mouseX - state.last_mouseX) + math.abs(mouseY - state.last_mouseY)
+                >= user_opts.minmousemove)
+        )
+    if moved_enough then
         if window_controls_enabled() and user_opts.windowcontrols_independent then
             if mouse_in_area("showhide_wc") then
                 show_wc()
@@ -2836,7 +2851,11 @@ local function process_mouse_move(refresh)
             if window_controls_enabled() then show_wc() end
         end
     end
-    state.last_mouseX, state.last_mouseY = mouseX, mouseY
+
+    if refresh or user_opts.minmousemove == 0 or moved_enough or not have_baseline then
+        state.last_mouseX, state.last_mouseY = mouseX, mouseY
+        state.last_mousemove_time = now
+    end
 end
 
 local function process_event(source, what)
@@ -2928,7 +2947,7 @@ end
 
 local function render()
     msg.trace("rendering")
-    local mouseX, mouseY = get_virt_mouse_pos()
+    local mouseX, mouseY = mp.get_mouse_pos()
     local now = mp.get_time()
 
     -- check if display changed, if so request reinit

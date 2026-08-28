@@ -417,6 +417,8 @@ typedef struct MPContext {
     double mouse_timer;
     unsigned int mouse_event_ts;
     bool mouse_cursor_visible;
+    double mouse_last_event_time;
+    int mouse_unhide_x, mouse_unhide_y;
 
     // used to prevent hanging in some error cases
     double start_timestamp;
