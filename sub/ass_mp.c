@@ -115,7 +115,7 @@ MP_PRINTF_ATTRIBUTE(2, 0)
 static void message_callback(int level, const char *format, va_list va, void *ctx)
 {
     struct mp_log *log = ctx;
-    if (!log)
+    if (!log || !strncmp("fontselect: failed to find any fallback with glyph", format, 50))
         return;
     level = map_ass_level[level];
     mp_msg_va(log, level, format, va);
