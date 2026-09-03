@@ -5924,6 +5924,10 @@ void run_command(struct MPContext *mpctx, struct mp_cmd *cmd,
     bool noise = cmd->def->is_noisy || cmd->mouse_move;
     mp_cmd_dump(mpctx->log, noise ? MSGL_TRACE : MSGL_DEBUG, "Run command:", cmd);
 
+    bool video_osd = opts->video_osd;
+    if (cmd->def->console)
+        opts->video_osd = false;
+
     if (cmd->flags & MP_EXPAND_PROPERTIES) {
         for (int n = 0; n < cmd->nargs; n++) {
             const m_option_type_t *type = cmd->args[n].type->type;
@@ -5936,6 +5940,7 @@ void run_command(struct MPContext *mpctx, struct mp_cmd *cmd,
                 char *s = mp_property_expand_string(mpctx, *list);
                 if (!s) {
                     ctx->success = false;
+                    opts->video_osd = video_osd;
                     mp_cmd_ctx_complete(ctx);
                     return;
                 }
@@ -5946,6 +5951,7 @@ void run_command(struct MPContext *mpctx, struct mp_cmd *cmd,
             }
         }
     }
+    opts->video_osd = video_osd;
 
     if (cmd->def->spawn_thread) {
         mpctx->outstanding_async += 1; // prevent that core disappears
@@ -7625,7 +7631,7 @@ const struct mp_cmd_def mp_cmds[] = {
         .priv = &(const bool){false}
     },
     { "print-text", cmd_print_text, { {"text", OPT_STRING(v.s)} },
-        .is_noisy = true, .allow_auto_repeat = true },
+        .is_noisy = true, .allow_auto_repeat = true, .console = true, },
     { "show-text", cmd_show_text,
         {
             {"text", OPT_STRING(v.s)},

@@ -41,6 +41,7 @@ struct mp_cmd_def {
     bool scalable;      // command called with scale for high resolution input
     bool is_ignore;     // used by ignore command only, avoids queuing commands
     bool is_noisy;      // reduce log level
+    bool console;       // output always goes to console
     bool default_async; // default to MP_ASYNC flag if none set by user
     // If you set this, handler() must ensure mp_cmd_ctx_complete() is called
     // at some point (can be after handler() returns). If you don't set it, the
