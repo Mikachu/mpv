@@ -52,6 +52,11 @@ function _mpv_generate_arguments {
 
     local name=$match[1] desc=$match[2]
 
+    if [[ $name == profile-(add|append|pre|set|clr|del|remove|toggle) ]]; then
+      # --profile has no persistent value to combine with or clear
+      continue
+    fi
+
     if [[ $desc == Flag* ]]; then
 
       _mpv_completion_arguments+="$name"
