@@ -2565,14 +2565,17 @@ local function osc_init()
                     mp.commandv("seek", seekto, flags)
                     element.state.lastseek = seekto
             end
+            if not element.state.was_paused then
+                mp.set_property_native("pause", false)
+            end
 
         end
     ne.eventresponder["mbtn_left_down"] = function (element)
         element.state.mbtn_left = true
+        element.state.orig_keep_open = mp.get_property("keep-open")
+        element.state.was_paused = mp.get_property_native("pause")
+        mp.set_property("keep-open", "always")
         mp.commandv("seek", get_slider_value(element), "absolute-percent+exact")
-    end
-    ne.eventresponder["mbtn_left_up"] = function (element)
-        element.state.mbtn_left = false
     end
     ne.eventresponder["mbtn_right_up"] = function (element)
         local chapter
@@ -2590,8 +2593,21 @@ local function osc_init()
             mp.set_property("chapter", chapter - 1)
         end
     end
-    ne.eventresponder["reset"] =
-        function (element) element.state.lastseek = nil end
+    ne.eventresponder["reset"] = function (element)
+        element.state.lastseek = nil
+        if not element.state.mbtn_left then
+            return
+        end
+        element.state.mbtn_left = false
+        if element.state.orig_keep_open ~= nil then
+            mp.set_property("keep-open", element.state.orig_keep_open)
+            if not element.state.was_paused then
+                mp.set_property_native("pause", false)
+            end
+            element.state.orig_keep_open = nil
+            element.state.was_paused = nil
+        end
+    end
 
     if user_opts.scrollcontrols then
         ne.eventresponder["wheel_up_press"] =
