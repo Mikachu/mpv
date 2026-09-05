@@ -964,6 +964,13 @@ static int mp_property_remaining_file_loops(void *ctx, struct m_property *prop,
         int action, void *arg)
 {
     MPContext *mpctx = ctx;
+    if ((action == M_PROPERTY_PRINT ||
+         action == M_PROPERTY_GET_STRING) &&
+        mpctx->remaining_file_loops < 1)
+    {
+        *(char **)arg = talloc_strdup(NULL, mpctx->remaining_file_loops ? "inf" : "no");
+        return M_PROPERTY_OK;
+    }
     return m_property_int_ro(action, arg, mpctx->remaining_file_loops);
 }
 
@@ -971,6 +978,13 @@ static int mp_property_remaining_ab_loops(void *ctx, struct m_property *prop,
         int action, void *arg)
 {
     MPContext *mpctx = ctx;
+    if ((action == M_PROPERTY_PRINT ||
+         action == M_PROPERTY_GET_STRING) &&
+        mpctx->remaining_ab_loops == -1)
+    {
+        *(char **)arg = talloc_strdup(NULL, "inf");
+        return M_PROPERTY_OK;
+    }
     return m_property_int_ro(action, arg, mpctx->remaining_ab_loops);
 }
 
