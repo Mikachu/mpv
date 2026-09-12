@@ -78,6 +78,7 @@ local user_opts = {
     time_pos_outline_color = "#000000",   -- color of the border timecodes in slimbox and TimePosBar
 
     tick_delay = 1 / 60,                   -- minimum interval between OSC redraws in seconds
+    watch_delay = 1 / 60,                  -- minimum interval for redraws due to properties
     tick_delay_follow_display_fps = false, -- use display fps as the minimum interval
 
     max_thumb_size = 200, -- maximum display size of preview thumbnails
@@ -253,6 +254,7 @@ local margins_opts = {
 }
 
 local tick_delay = 1 / 60
+local watch_delay = 1 / 60
 local window_control_box_width = 80
 local layouts = {}
 local is_december = os.date("*t").month == 12
@@ -706,20 +708,41 @@ local tick
 -- Request that tick() is called (which typically re-renders the OSC).
 -- The tick is then either executed immediately, or rate-limited if it was
 -- called a small time ago.
-local function request_tick()
+local function request_tick_delayed(delay)
     if state.tick_timer == nil then
         state.tick_timer = mp.add_timeout(0, tick)
     end
 
+    local now = mp.get_time()
+    local timeout = delay - (now - state.tick_last_time)
+    if timeout < 0 then
+        timeout = 0
+    end
+    local target = now + timeout
+
     if not state.tick_timer:is_enabled() then
-        local now = mp.get_time()
-        local timeout = tick_delay - (now - state.tick_last_time)
-        if timeout < 0 then
-            timeout = 0
-        end
         state.tick_timer.timeout = timeout
         state.tick_timer:resume()
+        state.tick_target_time = target
+    elseif not state.tick_target_time or target < state.tick_target_time then
+        -- A faster-cadence request (e.g. mouse movement) came in while a
+        -- slower one (e.g. a watched property) was already pending.
+        -- Reschedule for the earlier deadline instead of dropping it.
+        state.tick_timer:kill()
+        state.tick_timer.timeout = timeout
+        state.tick_timer:resume()
+        state.tick_target_time = target
     end
+end
+
+-- Used for interactive updates (mouse movement etc). Uses tick_delay.
+local function request_tick()
+    request_tick_delayed(tick_delay)
+end
+
+-- Used for updates coming from observed/watched properties. Uses watch_delay.
+local function request_tick_watch()
+    request_tick_delayed(watch_delay)
 end
 
 local function request_init()
@@ -3221,6 +3244,7 @@ local function shutdown()
 end
 
 local function set_tick_delay(_, display_fps)
+    watch_delay = user_opts.watch_delay
     -- may be nil if unavailable or 0 fps is reported
     if not display_fps or not user_opts.tick_delay_follow_display_fps then
         tick_delay = user_opts.tick_delay
@@ -3245,7 +3269,7 @@ observe_cached("duration", function ()
         request_init()
     elseif state.chapter_list[1] and state.slider_element then
         update_slider(state.slider_element)
-        request_tick()
+        request_tick_watch()
     end
 end)
 
@@ -3290,7 +3314,7 @@ end)
 observe_cached("border", request_init_resize)
 observe_cached("title-bar", request_init_resize)
 observe_cached("window-maximized", request_init_resize)
-observe_cached("idle-active", request_tick)
+observe_cached("idle-active", request_tick_watch)
 
 mp.register_event("file-loaded", function()
     state.file_loaded = true
@@ -3307,9 +3331,9 @@ mp.observe_property("display-fps", "number", set_tick_delay)
 observe_cached("pause", request_tick)
 observe_cached("volume", request_tick)
 observe_cached("mute", request_tick)
-observe_cached("demuxer-cache-state", request_tick)
-mp.observe_property("vo-configured", "bool", request_tick)
-mp.observe_property("playback-time", "number", request_tick)
+observe_cached("demuxer-cache-state", request_tick_watch)
+mp.observe_property("vo-configured", "bool", request_tick_watch)
+mp.observe_property("playback-time", "number", request_tick_watch)
 observe_cached("osd-dimensions", request_init_resize)
 observe_cached("osd-scale-by-window", request_init_resize)
 mp.observe_property('touch-pos', 'native', handle_touch)
@@ -3520,7 +3544,7 @@ opt.read_options(user_opts, "osc", function(changed)
     set_icon_style()
     set_osc_styles()
     set_time_styles(changed.timetotal, changed.timems)
-    if changed.tick_delay or changed.tick_delay_follow_display_fps then
+    if changed.tick_delay or changed.watch_delay or changed.tick_delay_follow_display_fps then
         set_tick_delay("display_fps", mp.get_property_number("display_fps"))
     end
     request_tick()
