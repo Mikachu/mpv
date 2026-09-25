@@ -280,6 +280,7 @@ static ASS_Style *prepare_osd_ass(struct osd_state *osd, struct osd_object *obj)
 
     ASS_Style *style = get_style(&obj->ass, "OSD");
     mp_ass_set_style(style, playresx, playresy, &font);
+    obj->ass.track->WrapStyle = 2;
     return style;
 }
 
@@ -293,13 +294,59 @@ static void update_osd_text(struct osd_state *osd, struct osd_object *obj)
     add_osd_ass_event_escaped(obj->ass.track, "OSD", obj->text);
 }
 
+// Render a probe text on the OSD track and return its bounding-box height in
+// track coordinates, or 0 on failure.
+static double probe_height(struct ass_state *ass, ASS_Style *style,
+                           const char *text)
+{
+    ASS_Track *probe = ass_new_track(ass->library);
+    if (!probe)
+        return 0;
+    probe->PlayResX = ass->track->PlayResX;
+    probe->PlayResY = ass->track->PlayResY;
+
+    // Recreate the resolved OSD style on the probe track. ASS_Style is a
+    // plain struct; a shallow copy is fine because we only render, and
+    // ass_free_track frees it afterwards.
+    int sid = ass_alloc_style(probe);
+    if (sid < 0) {
+        ass_free_track(probe);
+        return 0;
+    }
+    probe->styles[sid] = *style;
+    probe->styles[sid].Name = strdup("OSD");
+    probe->styles[sid].FontName = strdup(style->FontName);
+
+    add_osd_ass_event(probe, "OSD", bstr0(text));
+
+    ass_set_frame_size(ass->render, probe->PlayResX, probe->PlayResY);
+    ASS_Image *img = ass_render_frame(ass->render, probe, 0, NULL);
+
+    int y0 = INT_MAX, y1 = INT_MIN;
+    for (ASS_Image *i = img; i; i = i->next) {
+        if (!i->w || !i->h)
+            continue;
+        y0 = MPMIN(y0, i->dst_y);
+        y1 = MPMAX(y1, i->dst_y + i->h);
+    }
+
+    ass_free_track(probe);
+    return y1 > y0 ? y1 - y0 : 0;
+}
+
 void osd_get_text_size(struct osd_state *osd, int *out_screen_h, int *out_font_h)
 {
     mp_mutex_lock(&osd->lock);
     struct osd_object *obj = osd->objs[OSDTYPE_OSD];
     ASS_Style *style = prepare_osd_ass(osd, obj);
-    *out_screen_h = obj->ass.track->PlayResY - style->MarginV;
-    *out_font_h = style->FontSize;
+    // MarginV applies at both the top and bottom of the playres.
+    *out_screen_h = obj->ass.track->PlayResY - 2 * style->MarginV;
+    // style->FontSize is the nominal em size; the real per-line advance is
+    // the font's ascent+descent in libass's resolved metrics, which has no
+    // public getter. Measure it: bbox("A\nA") - bbox("A") == one line.
+    double h2 = probe_height(&obj->ass, style, "A\\NA");
+    double h1 = probe_height(&obj->ass, style, "A");
+    *out_font_h = (h2 > h1) ? h2 - h1 : style->FontSize;
     mp_mutex_unlock(&osd->lock);
 }
 
