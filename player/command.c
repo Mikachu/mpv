@@ -441,7 +441,7 @@ static char *cut_osd_list(struct MPContext *mpctx, int action, char *header,
     } else if (mpctx->video_out && mpctx->opts->video_osd) {
         int screen_h, font_h;
         osd_get_text_size(mpctx->osd, &screen_h, &font_h);
-        max_lines = screen_h / MPMAX(font_h, 1);
+        max_lines = screen_h * 7 / (9 * MPMAX(font_h, 1));
     } else {
         max_lines = 24;
         terminal_get_size(&term_width, &max_lines);
