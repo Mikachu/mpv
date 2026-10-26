@@ -637,8 +637,18 @@ static bool ao_play_data(struct ao *ao)
 
     void **planes = NULL;
     int space = state.free_samples;
-    if (!space)
+    if (!space) {
+        // Device buffer is full but not running: nothing will ever drain it,
+        // so kick it off instead of sleeping forever.
+        if (!p->streaming && !state.playing && state.queued_samples > 0) {
+            MP_WARN(ao, "device buffer full but not started (queued=%d), starting AO\n",
+                    (int)state.queued_samples);
+            ao->driver->start(ao);
+            p->streaming = true;
+            return true;
+        }
         return false;
+    }
     mp_assert(space >= 0);
 
     int samples = 0;
@@ -692,6 +702,10 @@ static bool ao_play_data(struct ao *ao)
 
 eof:
     MP_VERBOSE(ao, "audio end or underrun\n");
+    if (!state.playing)
+        MP_VERBOSE(ao, "underrun: streaming=%d free=%d queued=%d\n",
+                   p->streaming, (int)state.free_samples,
+                   (int)state.queued_samples);
     // Normal AOs signal EOF on underrun, untimed AOs never signal underruns.
     if (ao->untimed || !state.playing || ao->stream_silence) {
         p->streaming = state.playing && !ao->untimed;
