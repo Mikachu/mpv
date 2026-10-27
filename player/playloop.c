@@ -271,10 +271,6 @@ void reset_playback_state(struct MPContext *mpctx)
     mpctx->cache_buffer = 100;
     mpctx->cache_update_pts = MP_NOPTS_VALUE;
 
-    mpctx->stall_check_pts = MP_NOPTS_VALUE;
-    mpctx->stall_check_audio_pts = MP_NOPTS_VALUE;
-    mpctx->stall_check_time = mp_time_sec();
-
     encode_lavc_discontinuity(mpctx->encode_lavc_ctx);
 
     update_internal_pause_state(mpctx);
@@ -1301,11 +1297,6 @@ void run_playloop(struct MPContext *mpctx)
     handle_keep_open(mpctx);
 
     handle_sstep(mpctx);
-
-    // Must run after handle_eof/handle_playback_restart (so video_status is
-    // settled for this iteration) but before execute_queued_seek (so a
-    // watchdog-issued seek is picked up in this same iteration).
-    check_video_stall(mpctx);
 
     update_core_idle_state(mpctx);
 
