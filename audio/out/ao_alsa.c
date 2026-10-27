@@ -941,22 +941,16 @@ static bool recover_and_get_state(struct ao *ao, struct mp_pcm_state *state)
             // Otherwise do error checking and query the PCM state properly.
             CHECK_ALSA_ERROR("snd_pcm_status");
 
+            // ALSA computes xrun status *after* computing this return value,
+            // so ask again to make sure. Could also just use snd_pcm_state
+            // in the first place, but I'm investigating if that is always fine.
             pcmst = snd_pcm_status_get_state(st);
+            if (pcmst == SND_PCM_STATE_RUNNING)
+                pcmst = snd_pcm_state(p->alsa);
         }
 
         if (n == 10)
             pcmst = SND_PCM_STATE_DISCONNECTED;
-
-        // snd_pcm_status() can report a stale RUNNING state together with an
-        // avail that already reflects an XRUN detected during that very call.
-        // A really running device can't have a completely empty buffer, so
-        // query again to get the real state.
-        if (pcmst == SND_PCM_STATE_RUNNING &&
-            snd_pcm_status_get_avail(st) >= (snd_pcm_sframes_t)p->buffersize)
-        {
-            MP_VERBOSE(ao, "stale RUNNING state with empty buffer, re-querying\n");
-            continue;
-        }
 
         if (pcmst == SND_PCM_STATE_PREPARED ||
             pcmst == SND_PCM_STATE_RUNNING ||
