@@ -612,8 +612,26 @@ static struct mp_cmd *resolve_key(struct input_ctx *ictx, int code)
     update_mouse_section(ictx);
     struct mp_cmd *cmd = get_cmd_from_keys(ictx, (bstr){0}, code);
     key_buf_add(ictx->key_history, code);
-    if (cmd && !cmd->def->is_ignore && !should_drop_cmd(ictx, cmd))
-        return cmd;
+    if (cmd && !cmd->def->is_ignore) {
+        // Coalesce consecutive unicode text input with the queued tail
+        // command. Bursts of text (e.g. terminal pastes) otherwise arrive
+        // as one command per character and overflow the key fifo, which
+        // silently drops them (input_key_fifo_size defaults to 7).
+        if (cmd->key_text) {
+            struct mp_cmd *tail = queue_peek_tail(&ictx->cmd_queue);
+            if (tail && tail->key_text && !tail->is_up &&
+                bstr_equals(tail->input_section, cmd->input_section) &&
+                strcmp(tail->original, cmd->original) == 0)
+            {
+                tail->key_text = talloc_strdup_append_buffer(tail->key_text,
+                                                             cmd->key_text);
+                talloc_free(cmd);
+                return NULL;
+            }
+        }
+        if (!should_drop_cmd(ictx, cmd))
+            return cmd;
+    }
     talloc_free(cmd);
     return NULL;
 }
