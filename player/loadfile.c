@@ -1930,8 +1930,10 @@ static void play_current_file(struct MPContext *mpctx)
     if (pl) {
         // pl->playlist_dir indicates that the playlist was auto-created from
         // the parent file. In this case, mpctx->filename points to real file.
-        if (watch_later && !pl->playlist_dir)
+        if (watch_later && !pl->playlist_dir) {
+            MP_INFO(mpctx, "Following resume redirect.\n");
             mp_delete_watch_later_conf(mpctx, mpctx->filename);
+        }
         playlist_populate_playlist_path(pl, mpctx->filename);
         if (infinite_playlist_loading_loop(mpctx, pl)) {
             mpctx->stop_play = PT_STOP;
@@ -1944,6 +1946,9 @@ static void play_current_file(struct MPContext *mpctx)
         mpctx->error_playing = 2;
         goto terminate_playback;
     }
+
+    if (watch_later)
+        MP_INFO(mpctx, "Resuming playback.\n");
 
     if (mpctx->opts->rebase_start_time)
         demux_set_ts_offset(mpctx->demuxer, -mpctx->demuxer->start_time);
