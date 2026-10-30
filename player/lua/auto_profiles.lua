@@ -184,6 +184,20 @@ local function load_profiles(profiles_property)
     end
 end
 
+do
+    local has_cond_profile = false
+    for _, v in ipairs(mp.get_property_native("profile-list")) do
+        local cond = v["profile-cond"]
+        if cond and #cond > 0 then
+            has_cond_profile = true
+            break
+        end
+    end
+    if not has_cond_profile and mp.get_property("load-auto-profiles") == "auto" then
+        exit()
+        return
+    end
+end
 mp.observe_property("profile-list", "native", function (_, profiles_property)
     profiles = {}
     watched_properties = {}
