@@ -1853,6 +1853,9 @@ static void play_current_file(struct MPContext *mpctx)
     mp_filter_graph_set_max_run_time(mpctx->filter_root, 0.1);
 
     term_osd_clear_text(mpctx);
+    mpctx->osd_visible = 0;
+    mpctx->osd_progbar.type = -1;
+    osd_set_progbar(mpctx->osd, &mpctx->osd_progbar);
     reset_playback_state(mpctx);
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
