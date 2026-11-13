@@ -145,6 +145,9 @@ static int fill_buffer(stream_t *s, void *buffer, int max_len)
         if (!p->appending || p->use_poll)
             break;
 
+        if (atomic_load(&s->abort_eof_retry))
+            break;
+
         if (mp_cancel_wait(p->cancel, RETRY_TIMEOUT))
             break;
     }

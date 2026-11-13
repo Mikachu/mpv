@@ -2438,6 +2438,13 @@ static bool read_packet(struct demux_internal *in)
     mp_mutex_lock(&in->lock);
     update_cache(in);
 
+    // Seek produced a packet or a declared EOF: re-enable EOF retries.
+    if (demux->stream &&
+        (pkt || (eof && !in->seeking)))
+    {
+        atomic_store(&demux->stream->abort_eof_retry, false);
+    }
+
     if (pkt) {
         mp_assert(pkt->stream >= 0 && pkt->stream < in->num_streams);
         add_packet_locked(in->streams[pkt->stream], pkt);
@@ -4134,6 +4141,11 @@ static bool queue_seek(struct demux_internal *in, double seek_pts, int flags,
         execute_cache_seek(in, cache_target, seek_pts, flags);
     } else {
         switch_to_fresh_cache_range(in);
+
+        // Don't let stream-level EOF retry loops (appending files) delay
+        // this seek or the first reads at the new position.
+        if (in->d_thread->stream)
+            atomic_store(&in->d_thread->stream->abort_eof_retry, true);
 
         in->seeking = true;
         in->seek_flags = flags;

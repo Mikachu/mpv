@@ -19,6 +19,7 @@
 #define MPLAYER_STREAM_H
 
 #include "common/msg.h"
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -329,6 +330,7 @@ typedef struct stream {
     bool allow_partial_read : 1; // allows partial read with stream_read_file()
     bool autoprobed : 1; // opened by the autoprobe loop, not explicitly
                          // requested, failures should stay quiet
+    atomic_bool abort_eof_retry;
     struct mp_log *log;
     struct mpv_global *global;
 
