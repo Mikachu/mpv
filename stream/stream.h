@@ -331,6 +331,7 @@ typedef struct stream {
     bool autoprobed : 1; // opened by the autoprobe loop, not explicitly
                          // requested, failures should stay quiet
     atomic_bool abort_eof_retry;
+    atomic_bool appending;
     struct mp_log *log;
     struct mpv_global *global;
 

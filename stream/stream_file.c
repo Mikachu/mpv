@@ -90,13 +90,12 @@ struct priv {
     bool close;
     bool use_poll;
     bool regular_file;
-    bool appending;
     int64_t orig_size;
     struct mp_cancel *cancel;
 };
 
 // Total timeout = RETRY_TIMEOUT * MAX_RETRIES
-#define RETRY_TIMEOUT 0.2
+#define RETRY_TIMEOUT 0.5
 #define MAX_RETRIES 10
 
 static int64_t get_size(stream_t *s)
@@ -136,13 +135,13 @@ static int fill_buffer(stream_t *s, void *buffer, int max_len)
 
         // Try to detect and handle files being appended during playback.
         int64_t size = get_size(s);
-        if (p->regular_file && size > p->orig_size && !p->appending) {
+        if (p->regular_file && size > p->orig_size && !atomic_load(&s->appending)) {
             MP_WARN(s, "File is apparently being appended to, will keep "
                     "retrying with timeouts.\n");
-            p->appending = true;
+            atomic_store(&s->appending, true);
         }
 
-        if (!p->appending || p->use_poll)
+        if (!atomic_load(&s->appending) || p->use_poll)
             break;
 
         if (atomic_load(&s->abort_eof_retry))
@@ -326,7 +325,7 @@ static int open_f(stream_t *stream, const struct stream_open_args *args)
         }
     } else {
         if (bstr_startswith0(bstr0(stream->url), "appending://"))
-            p->appending = true;
+            atomic_store(&stream->appending, true);
 
         mode_t openmode = S_IRUSR | S_IWUSR;
 #ifndef __MINGW32__

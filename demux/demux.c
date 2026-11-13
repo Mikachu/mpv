@@ -3958,8 +3958,14 @@ static struct demux_cached_range *find_cache_seek_range(struct demux_internal *i
             MP_VERBOSE(in, "cached range %d: %f <-> %f (bof=%d, eof=%d)\n",
                        n, r->seek_start, r->seek_end, r->is_bof, r->is_eof);
 
+            // For appending files, EOF is transient: don't let an
+            // EOF-marked range cover seek points past its data, so
+            // seeks to the end re-probe the file for appended data.
+            bool eof_covers = r->is_eof &&
+                !(in->d_thread->stream && in->d_thread->stream->appending);
+
             if ((pts >= r->seek_start || r->is_bof) &&
-                (pts <= r->seek_end || r->is_eof))
+                (pts <= r->seek_end || eof_covers))
             {
                 MP_VERBOSE(in, "...using this range for in-cache seek.\n");
                 res = r;
